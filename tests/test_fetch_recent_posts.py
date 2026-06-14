@@ -1,0 +1,155 @@
+"""Tests for fetch-recent-posts script."""
+import json
+import re
+import tempfile
+import unittest
+from pathlib import Path
+
+import sys
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / ".github" / "scripts"))
+from fetch_recent_posts import parse_rss_to_posts, strip_html
+
+# Mock RSS XML
+MOCK_RSS = """<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <item>
+      <title>First Post</title>
+      <link>https://example.com/p/first</link>
+      <description><p>First post <b>description</b> here.</p></description>
+    </item>
+    <item>
+      <title>Second Post</title>
+      <link>https://example.com/p/second</link>
+      <description>Second post with a very long description that should be truncated because it exceeds the maximum allowed length for descriptions in the feed output format.</description>
+    </item>
+    <item>
+      <title>Third Post</title>
+      <link>https://example.com/p/third</link>
+      <description></description>
+    </item>
+  </channel>
+</rss>"""
+
+
+class TestStripHtml(unittest.TestCase):
+    def test_strips_tags(self):
+        self.assertEqual(strip_html("<p>Hello <b>world</b></p>"), "Hello world")
+
+    def test_empty(self):
+        self.assertEqual(strip_html(""), "")
+
+    def test_no_tags(self):
+        self.assertEqual(strip_html("No tags"), "No tags")
+
+
+class TestParseRssToPosts(unittest.TestCase):
+    def test_parse_rss_to_posts(self):
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".xml", delete=False) as f:
+            f.write(MOCK_RSS)
+            rss_path = Path(f.name)
+
+        try:
+            posts = parse_rss_to_posts(rss_path)
+            self.assertEqual(len(posts), 3)
+            self.assertEqual(posts[0]["title"], "First Post")
+            self.assertEqual(posts[0]["url"], "https://example.com/p/first")
+            self.assertEqual(posts[0]["description"], "First post description here.")
+            self.assertEqual(posts[1]["title"], "Second Post")
+            self.assertLessEqual(len(posts[1]["description"]), 140)
+            self.assertTrue(posts[1]["description"].endswith("..."))
+            self.assertEqual(posts[2]["description"], "Read more.")
+        finally:
+            rss_path.unlink()
+
+    def test_parse_rss_respects_limit(self):
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".xml", delete=False) as f:
+            f.write(MOCK_RSS)
+            rss_path = Path(f.name)
+
+        try:
+            posts = parse_rss_to_posts(rss_path, limit=2)
+            self.assertEqual(len(posts), 2)
+        finally:
+            rss_path.unlink()
+
+
+class TestRecentPostsJson(unittest.TestCase):
+    ISO8601_REGEX = (
+        r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(Z|[+-]\d{2}:\d{2})?$"
+    )
+
+    def test_recent_posts_json_schema(self):
+        """Ensure recent-posts.json exists and has valid schema."""
+        repo_root = Path(__file__).resolve().parent.parent
+        json_path = repo_root / "recent-posts.json"
+        if not json_path.exists():
+            self.skipTest("recent-posts.json not found (run fetch script first)")
+        data = json.loads(json_path.read_text())
+        self.assertIn("posts", data)
+        self.assertIsInstance(data["posts"], list)
+        for post in data["posts"]:
+            self.assertIn("title", post)
+            self.assertIn("url", post)
+            self.assertIn("description", post)
+
+    def test_recent_posts_updated_format(self):
+        """When 'updated' exists in recent-posts.json, it must be valid ISO 8601."""
+        import re
+        repo_root = Path(__file__).resolve().parent.parent
+        json_path = repo_root / "recent-posts.json"
+        if not json_path.exists():
+            self.skipTest("recent-posts.json not found")
+        data = json.loads(json_path.read_text())
+        if "updated" not in data or not data["updated"]:
+            self.skipTest("recent-posts.json has no 'updated' field")
+        updated = data["updated"]
+        self.assertIsInstance(updated, str, "'updated' must be a string")
+        self.assertRegex(
+            updated,
+            self.ISO8601_REGEX,
+            f"'updated' must be ISO 8601, got: {updated!r}",
+        )
+
+
+class TestIndexHtmlStructure(unittest.TestCase):
+    """Ensure index.html has required structure (subscribe, guardrails, no broken iframe)."""
+
+    def test_has_subscribe_section(self):
+        repo_root = Path(__file__).resolve().parent.parent
+        html_path = repo_root / "index.html"
+        html = html_path.read_text()
+        self.assertIn('id="subscribe-section"', html, "Must have subscribe section")
+
+    def test_has_subscribe_link_not_iframe_embed(self):
+        """Subscribe links go to newsletter homepage; no iframe embed (causes refused to connect)."""
+        repo_root = Path(__file__).resolve().parent.parent
+        html_path = repo_root / "index.html"
+        html = html_path.read_text()
+        self.assertIn("newsletter.systemdesignlaws.xyz", html, "Subscribe links must use newsletter subdomain")
+        self.assertNotIn("substack.com/embed", html, "No iframe embed - causes refused to connect")
+
+    def test_has_guardrail_fallback(self):
+        """Frontend guardrail: show fallback when fetch fails."""
+        repo_root = Path(__file__).resolve().parent.parent
+        html_path = repo_root / "index.html"
+        html = html_path.read_text()
+        self.assertIn("guardrail-issue", html, "Must have guardrail fallback for fetch failures")
+
+    def test_all_subscribe_links_use_newsletter_subdomain(self):
+        """Every subscribe/email CTA must point to newsletter.systemdesignlaws.xyz. Post links use systemdesignlaws.substack.com (newsletter.* returns 404 for /p/ paths)."""
+        repo_root = Path(__file__).resolve().parent.parent
+        html_path = repo_root / "index.html"
+        html = html_path.read_text()
+        subscribe_classes = ["nav-cta", "btn-primary", "subscribe-cta", "lock-overlay", "btn-cta"]
+        for cls in subscribe_classes:
+            matches = re.findall(rf'class="[^"]*{re.escape(cls)}[^"]*"[^>]*href="([^"]+)"', html)
+            matches += re.findall(rf'href="([^"]+)"[^>]*class="[^"]*{re.escape(cls)}[^"]*"', html)
+            for url in matches:
+                self.assertIn("newsletter.systemdesignlaws.xyz", url, f"{cls} must use newsletter subdomain")
+        self.assertIn("newsletter.systemdesignlaws.xyz", html, "At least one subscribe link must exist")
+
+
+if __name__ == "__main__":
+    unittest.main()
