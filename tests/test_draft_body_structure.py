@@ -221,7 +221,10 @@ class TestDraftDiagramsEmbedded(unittest.TestCase):
             self.assertNotIn("Source:", content,
                 f"{draft_path.name} contains Source: attribution - must be standalone")
 
-            urls = re.findall(r"https?://[^\s)>\"]+", content)
+            # Stop at '}' too, so template tokens like
+            # {{BUTTON:label|https://newsletter.systemdesignlaws.xyz}} don't get
+            # captured with a trailing '}}' and misread as an external host.
+            urls = re.findall(r"https?://[^\s)>\"}]+", content)
             external_urls = []
             for url in urls:
                 host = urlparse(url).hostname or ""

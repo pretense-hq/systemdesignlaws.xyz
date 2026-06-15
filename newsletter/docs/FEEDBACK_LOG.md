@@ -167,6 +167,43 @@ Every batch process must show real-time ASCII progress bars:
 
 ---
 
+## Incident 2026-06-15: anti-duplicate check failed open, created a duplicate
+
+**What happened:** Running `create_draft.py --draft caching-for-system-design-interviews.md`
+created a SECOND "Caching for System Design Interviews" draft (id 202148021) even though
+the article was already published (id 191147640). The anti-duplicate step printed
+`Warning: Could not fetch drafts: 'str' object has no attribute 'get'` and then defaulted
+to "No duplicate - will create new".
+
+**Root causes:**
+1. `api.get_drafts()` / `api.get_posts()` return a dict `{"posts": [...], "hasMore", "nextCursor"}`,
+   NOT a list. `find_existing_post` iterated the dict (yielding string keys) and crashed on `.get`.
+2. The guard FAILED OPEN: on any lookup error it silently proceeded to create. A failed
+   duplicate check is not the same as "no duplicate".
+
+**Fixes applied (code):**
+- `list_posts.py`: added `_as_post_list()` (pulls the `posts` array, drops non-dicts) and
+  `_fetch_all_drafts()` (cursor pagination; library `offset/limit` returns HTTP 400 on this account).
+- `list_posts.py`: `find_existing_post` now raises `DuplicateCheckError` when a listing fails AND
+  no match was found (inconclusive != "no duplicate").
+- `create_draft.py`: anti-duplicate step is now FAIL-CLOSED - aborts with a clear message and a
+  `--force-new` escape hatch instead of silently creating.
+- `tests/test_draft_body_structure.py`: URL regex now stops at `}` so `{{BUTTON:label|url}}`
+  template tokens are not misread as external hosts.
+
+**Remediation:** Deleted only the unpublished duplicate (202148021) via targeted
+`api.delete_draft`; published article 191147640 left untouched. Repointed
+`newsletter/published/caching-for-system-design-interviews.json` from the deleted id to 191147640.
+
+**Operational facts (do not relearn):**
+- Run all scripts with `newsletter/scripts/.venv/bin/python` (system `python3` lacks `python-substack`).
+- Publication subdomain is `jimmymalhan` (custom domain `newsletter.systemdesignlaws.xyz`), NOT
+  `systemdesignlaws`. Leave `SUBSTACK_PUBLICATION` unset in `.env` so the PRIMARY publication is used.
+- This account has only `substack.sid` (no `connect.sid`); use the `SUBSTACK_COOKIES="substack.sid=..."`
+  form, not `SUBSTACK_SID`+`CONNECT_SID` (which requires both).
+
+---
+
 ## Template reference
 
 - **Article structure**: `newsletter/docs/ARTICLE_TEMPLATE.md`

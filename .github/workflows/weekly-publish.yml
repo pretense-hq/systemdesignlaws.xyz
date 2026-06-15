@@ -1,0 +1,92 @@
+name: Weekly Publish
+
+# Cloud replacement for the local macOS LaunchAgent. Runs the newsletter
+# orchestration agent in GitHub Actions (nothing local). Any org member can
+# trigger it from the Actions tab.
+
+on:
+  schedule:
+    - cron: '30 12 * * 0'   # Sunday 12:30 UTC == 18:00 IST
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'Run mode (draft = write + validate only, never publishes)'
+        type: choice
+        default: draft
+        options:
+          - draft
+          - publish
+
+permissions:
+  contents: write
+
+concurrency:
+  group: weekly-publish
+  cancel-in-progress: false
+
+jobs:
+  weekly:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Create venv and install Python deps
+        run: |
+          python3 -m venv newsletter/scripts/.venv
+          newsletter/scripts/.venv/bin/pip install -q --upgrade pip
+          newsletter/scripts/.venv/bin/pip install -q python-substack python-dotenv requests
+
+      - name: Install diagram export tooling (best-effort; reused SVGs need none)
+        continue-on-error: true
+        run: |
+          npm i -g excalidraw-brute-export-cli || true
+          npx --yes playwright install firefox || true
+
+      - name: Install Claude Code CLI
+        run: npm i -g @anthropic-ai/claude-code
+
+      - name: Write Substack credentials from secret
+        env:
+          SUBSTACK_COOKIES: ${{ secrets.SUBSTACK_COOKIES }}
+        run: |
+          umask 077
+          printf 'SUBSTACK_COOKIES=%s\n' "$SUBSTACK_COOKIES" > newsletter/scripts/.env
+
+      - name: Run weekly orchestration
+        env:
+          MODE: ${{ github.event.inputs.mode || 'publish' }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: bash .github/scripts/run_weekly_ci.sh
+
+      - name: Upload run log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: weekly-run-log
+          path: .github/automation-logs/run.log
+          if-no-files-found: ignore
+
+      - name: Commit results back (draft / backlog / published)
+        if: always()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          # Scope strictly to content paths — never the venv, .env, or logs.
+          git add newsletter/drafts newsletter/backlog.json newsletter/published 2>/dev/null || true
+          if git diff --staged --quiet; then
+            echo "No content changes to commit."
+          else
+            git commit -m "chore(weekly): ${{ github.event.inputs.mode || 'publish' }} run — newsletter update [skip ci]"
+            git push
+          fi
