@@ -68,6 +68,8 @@ jobs:
       - name: Merge PR (never delete main)
         run: |
           echo "All checks passed. Merging PR (deletes feature branch only, main is protected)."
-          gh pr merge ${{ github.event.pull_request.number }} --merge --delete-branch
+          # --repo lets gh operate via the API without a local checkout
+          # (this job has no actions/checkout step).
+          gh pr merge ${{ github.event.pull_request.number }} --merge --delete-branch --repo "$GITHUB_REPOSITORY"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
