@@ -88,5 +88,7 @@ jobs:
             echo "No content changes to commit."
           else
             git commit -m "chore(weekly): ${{ github.event.inputs.mode || 'publish' }} run — newsletter update [skip ci]"
-            git push
+            # Non-fatal: if a publish already happened, a failed push must not fail the
+            # job. The backlog reconciles on the next run via the anti-duplicate guard.
+            git push || echo "WARN: push failed; results are in the run but not committed (will reconcile next run)."
           fi

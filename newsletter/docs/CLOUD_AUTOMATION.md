@@ -52,6 +52,25 @@ Add the API key once:
 gh secret set ANTHROPIC_API_KEY   # paste the key when prompted
 ```
 
+## Run outcomes (job summary + exit code)
+
+The runner classifies every run and writes a one-line verdict to the job summary:
+
+| Outcome | Exit | Meaning / action |
+|---------|------|------------------|
+| PUBLISHED / DRAFT READY / no-op | 0 | Success (`PUBLISH_OK`, `DRAFT_READY`, `NOTHING_QUEUED`, or `ALREADY_PUBLISHED`). |
+| BLOCKED — no credentials | 2 | `SUBSTACK_COOKIES` or `ANTHROPIC_API_KEY` secret missing. Add it. |
+| AUTH FAILURE (Substack) | 3 | Substack cookie expired. Refresh `SUBSTACK_COOKIES` (see below). |
+| FAILED | 4 | Agent error (`PUBLISH_FAILED`) or no marker emitted. Check the log artifact. |
+| BLOCKED — credit / bad key | 5 | Anthropic credit balance too low, or `ANTHROPIC_API_KEY` invalid/expired. Add credits at console.anthropic.com/settings/billing, or rotate the key. |
+| TRANSIENT — rate limited | 6 | Anthropic rate-limited/overloaded. Just re-run later. |
+| FAILED — CLI missing | 7 | Claude Code CLI failed to install. Re-run; check the install step. |
+
+Success markers are detected before error signatures, so an article whose text contains
+words like "rate limit" or "credit balance" is never misclassified. Every failure prints the
+last 20 log lines into the step output, and the full log is uploaded as the `weekly-run-log`
+artifact.
+
 ## When a run reports AUTH FAILURE (cookie expired)
 
 The Substack session cookie expires periodically. When it does, the run ends with
