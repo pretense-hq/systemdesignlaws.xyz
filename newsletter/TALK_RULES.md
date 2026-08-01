@@ -1,4 +1,4 @@
-# Talk Rules — One Pass, No Re-reading
+# Talk Rules - One Pass, No Re-reading
 
 Skim once. Act. Don't re-read.
 
@@ -12,7 +12,7 @@ Skim once. Act. Don't re-read.
 - No external URLs in article content. No "Reference:" links, no "Source:" attributions.
 - Content is standalone - no external URL references in the published article.
 - **Rewrite, don't copy** - Content must be substantially rewritten in original words. Change sentence structure, use different phrasing, add original examples. Must not appear as copied content.
-- **No source data in GitHub** - Draft content must NOT be committed to the public repository. Drafts stay local or go directly to Substack. Use .gitignore to exclude newsletter/drafts/ and newsletter/research/.
+- **Drafts are committed; secrets are not** - Draft/article markdown IS committed to the repository under `newsletter/drafts/` (the weekly workflow runs `git add newsletter/drafts`). What must NEVER be committed: credentials (`newsletter/scripts/.env`, `.substack-cookies.json`) and generated bulk artifacts.
 
 ## Operational Rules (ALL agents)
 
@@ -31,7 +31,7 @@ Skim once. Act. Don't re-read.
 ## Tables and structure
 
 - Use structured bullet lists for comparisons. Format: **Label** - value. Or **Term** - Pros / Cons.
-- **Schema tables** - Use markdown pipe tables for schemas: | Column | Type | Purpose |
+- **Schemas** - Describe schemas as structured bullet lists, one bullet per column: **column name** - type - purpose. Never use markdown pipe tables (they break Substack rendering and are rejected by the draft tests).
 - For interview Q&A: **Question** - Answer (one per bullet).
 
 ## No raw code blocks
@@ -85,10 +85,10 @@ Skim once. Act. Don't re-read.
 
 ## Substack compatibility (when using create_draft.py)
 
-- **No em/en dashes** — Use `-` not `—` or `–` (editor can break on Unicode)
-- **No × in body** — Use `x` (e.g. "Nx read capacity" not "N×")
-- **No standalone ---** — Script converts these; avoid if possible
-- **Complete paragraphs** — Every section must have body text under each header, not just headers
+- **No em/en dashes** - Use `-` not `—` or `–` (the banned characters are quoted here only as counter-examples; the editor can break on Unicode)
+- **No multiplication sign in body** - Use `x` (e.g. "Nx read capacity" not "N×")
+- **No standalone ---** - Script converts these; avoid if possible
+- **Complete paragraphs** - Every section must have body text under each header, not just headers
 
 ---
 
