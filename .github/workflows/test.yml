@@ -12,6 +12,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Install Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Python dependencies
+        run: pip install -r newsletter/scripts/requirements.txt
+
       - name: Run Python tests
         run: python3 -m unittest discover -s tests -v
 
@@ -30,13 +38,23 @@ jobs:
 
       - name: Validate index.html structure
         run: |
-          grep -q '<div class="recent-list" id="recent-list">' index.html && echo "Recent Issues container OK"
-          grep -q 'id="recent-posts-data"' index.html && echo "Inline posts data OK"
-          grep -q 'recent-posts.json' index.html && echo "Dynamic fetch OK"
-          grep -q 'id="recent-updated"' index.html && echo "Last updated container OK"
-          grep -q 'id="subscribe-section"' index.html && echo "Substack email signup section OK"
-          grep -q 'newsletter.systemdesignlaws.xyz' index.html && echo "Subscribe links point to newsletter subdomain OK"
-          grep -q 'guardrail-issue' index.html && echo "Frontend guardrail fallback OK"
+          # Each assertion must gate the step: `grep && echo` swallows failures
+          # under `set -e` when the grep is a non-final member of an && list.
+          check() {
+            if grep -q "$1" index.html; then
+              echo "OK: $2"
+            else
+              echo "FAIL: $2 (pattern not found: $1)"
+              exit 1
+            fi
+          }
+          check '<div class="recent-list" id="recent-list">' "Recent Issues container"
+          check 'id="recent-posts-data"' "Inline posts data"
+          check 'recent-posts.json' "Dynamic fetch"
+          check 'id="recent-updated"' "Last updated container"
+          check 'id="subscribe-section"' "Substack email signup section"
+          check 'newsletter.systemdesignlaws.xyz' "Subscribe links point to newsletter subdomain"
+          check 'guardrail-issue' "Frontend guardrail fallback"
 
   e2e-website:
     runs-on: ubuntu-latest
