@@ -5,7 +5,7 @@ Use this structure for all upcoming articles. Based on `scaling-reads-for-system
 ## Required sections (in order)
 
 1. **Title** - `# [Topic] for System Design Interviews`
-2. **TL;DR** - One-liner after title: `**TL;DR** - [core insight]. [1–2 sentence takeaway].`
+2. **TL;DR** - One-liner after title: `**TL;DR** - [core insight]. [1-2 sentence takeaway].`
 3. **>> Elevator pitch** (optional) - 30-second quote format
 4. **The Problem** - Real-world scenario, numbers (read/write ratios, scale)
 5. **>> Physics quote** (optional) - Why this isn't just a software fix
@@ -32,20 +32,20 @@ Use this structure for all upcoming articles. Based on `scaling-reads-for-system
 
 - All diagrams in Excalidraw: `newsletter/plots/excalidraw/[name].excalidraw`
 - Export to SVG: `newsletter/plots/svg/[name].svg`
-- PNG for Substack: `newsletter/plots/png/[name].png`
+- PNG for Substack: `newsletter/plots/png/[name].png` (generated locally at export time; the png/ directory is not committed)
 - Image refs in draft: `![Alt](https://raw.githubusercontent.com/.../newsletter/plots/svg/[name].svg)`
 - **Sizing**: All diagrams ~960x480 viewBox. Content must not clip. See `newsletter/docs/FEEDBACK_LOG.md`.
 
-## Schema format (no raw code)
+## Schema format (no raw code, no code fences)
 
-```
+Write the schema exactly like this, as plain markdown in the article body. Never wrap it in a code fence and never use raw DDL or pipe tables:
+
 **Schema: users table**
 
 - **id** integer, primary key - Unique user identifier
 - **email** varchar(255), indexed - Most common lookup field
 - **name** varchar(100) - Display name
 - **created_at** timestamp, indexed - Account creation date
-```
 
 ## Blockquote types
 

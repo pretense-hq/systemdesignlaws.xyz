@@ -20,7 +20,7 @@ The script creates or updates the `Protect main` ruleset from `.github/rulesets/
 ## Verify on GitHub
 
 ```bash
-gh api repos/jimmymalhan/systemdesignlaws.xyz/rulesets --jq '.[] | {name: .name, enforcement: .enforcement}'
+gh api repos/pretense-a1/systemdesignlaws.xyz/rulesets --jq '.[] | {name: .name, enforcement: .enforcement}'
 ```
 
 You should see an active ruleset named `Protect main`.
