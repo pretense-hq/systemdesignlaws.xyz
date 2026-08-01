@@ -52,7 +52,7 @@ Or batch: `python3 newsletter/scripts/batch_create_and_publish.py`
 
 Create then publish. No Substack drafts visible. Rate limits: slow at 70% (3x), 90% (5x), 95% (pause).
 
-### 3. Report back
+### 4. Report back
 
 Return to Orchestrator (and display to user):
 - draft_file: the filename pushed
