@@ -185,16 +185,9 @@ class TestDraftDiagramsEmbedded(unittest.TestCase):
             self.assertTrue(attrs["src"].startswith("https://"), f"Image {i} src must be a full URL: {attrs['src']}")
 
     def test_all_drafts_minimum_20_diagrams(self):
-        """All drafts (except caching and real-time-updates which need upgrade) must have 20+ diagrams."""
-        # These drafts are known to need diagram upgrades
-        UPGRADE_NEEDED = {
-            "caching-for-system-design-interviews.md",
-            "real-time-updates-for-system-design-interviews.md",
-        }
+        """All drafts must have 20+ diagrams."""
         drafts_dir = REPO / "newsletter" / "drafts"
         for draft_path in drafts_dir.glob("*.md"):
-            if draft_path.name in UPGRADE_NEEDED:
-                continue
             content, doc, path = self._load_draft(draft_path.name)
             if content is None:
                 continue
