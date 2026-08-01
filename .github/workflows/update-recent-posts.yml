@@ -16,8 +16,16 @@ jobs:
 
       - name: Fetch Substack feed and update recent-posts.json
         run: |
-          curl -sL "https://systemdesignlaws.substack.com/feed" -o feed.xml
-          python3 .github/scripts/fetch_recent_posts.py
+          set -euo pipefail
+          FEED_URL="https://newsletter.systemdesignlaws.xyz/feed"
+          if ! curl -sfL "$FEED_URL" -o feed.xml; then
+            echo "::error::Failed to fetch RSS feed from $FEED_URL (curl returned non-zero; HTTP error or network failure)"
+            exit 1
+          fi
+          if ! python3 .github/scripts/fetch_recent_posts.py; then
+            echo "::error::fetch_recent_posts.py failed - feed.xml may not be a valid RSS feed (did $FEED_URL redirect to an HTML page?)"
+            exit 1
+          fi
 
       - name: Commit and push if changed
         run: |
