@@ -1,60 +1,45 @@
 {
   "posts": [
     {
-      "title": "Real-time Updates for System Design Interviews",
+      "title": "Real-time Updates",
       "url": "https://systemdesignlaws.substack.com/p/real-time-updates",
-      "description": "Two hops for real-time: client-server (polling, long polling, SSE, WebSockets) and source-to-server (Pub/Sub). Start simple unless you need sub-second latency."
+      "description": "- Real-time systems need two hops: server to client (WebSockets, SSE, long polling) and source to server (Pub/Su..."
     },
     {
-      "title": "Multi-step Processes for System Design Interviews",
+      "title": "Multi-step Processes",
       "url": "https://systemdesignlaws.substack.com/p/multi-step-processes",
-      "description": "Reliable multi-step workflows: event sourcing, Temporal, Step Functions. Durable execution, automatic retries, and compensation."
+      "description": "- Multi-step processes fail halfway: payment charged but inventory not reserved. Use workflow engines like Tempo..."
     },
     {
-      "title": "Dealing with Contention for System Design Interviews",
+      "title": "Dealing with Contention",
       "url": "https://systemdesignlaws.substack.com/p/dealing-with-contention",
-      "description": "Fix race conditions with atomicity, locks, or optimistic concurrency. Scale to distributed coordination when multiple databases are involved."
+      "description": "- Fix race conditions with atomicity, locks, or optimistic concurrency. Scale to distributed coordination when m..."
     },
     {
       "title": "Caching for System Design Interviews",
       "url": "https://systemdesignlaws.substack.com/p/caching-for-system-design-interviews",
-      "description": "Cache-aside with Redis is the default. Layer CDN for global users. Master invalidation and you cover 90% of interview caching questions."
+      "description": "- Caching cuts latency 50x and reduces DB load by 95%+. Cache-aside with Redis is the default. Layer CDN for glo..."
     },
     {
-      "title": "Managing Long-Running Tasks for System Design Interviews",
+      "title": "Managing Long-Running Tasks",
       "url": "https://systemdesignlaws.substack.com/p/managing-long-running-tasks",
-      "description": "Accept immediately, process asynchronously with queues and workers. Poll or webhook for status. Retries, dead letter queues, idempotency."
+      "description": "- When a task takes more than a few seconds, do not make the client wait. Accept the request immediately (return..."
     },
     {
-      "title": "Handling Large Blobs for System Design Interviews",
+      "title": "Handling Large Blobs",
       "url": "https://systemdesignlaws.substack.com/p/handling-large-blobs",
-      "description": "Files never pass through your server. Presigned URLs, multipart upload, resumable upload, CDN for downloads."
+      "description": "- Files should never pass through your application server. Use presigned URLs for direct upload to object storag..."
     },
     {
-      "title": "Scaling Writes for System Design Interviews",
+      "title": "Scaling Writes",
       "url": "https://systemdesignlaws.substack.com/p/scaling-writes",
-      "description": "Vertical scaling, sharding, queues, batching. Each tier addresses a different constraint. Start simple, escalate when math proves you need it."
+      "description": "- Scale writes in four tiers: vertical scaling with write-optimized databases, sharding to spread load, queues a..."
     },
     {
-      "title": "Scaling Reads for System Design Interviews",
+      "title": "Scaling Reads",
       "url": "https://systemdesignlaws.substack.com/p/scaling-reads",
-      "description": "Three tiers: optimize the database, scale horizontally with replicas and sharding, then add caching. Start simple."
-    },
-    {
-      "title": "I Made Claude Prove its hallucination",
-      "url": "https://systemdesignlaws.substack.com/p/i-made-claude-prove-its-hallucination",
-      "description": "I stopped using 1 clever model and built a local multi-agent debugging workflow that had to earn every answer before I trusted it."
-    },
-    {
-      "title": "Indexes Don't Make Databases Fast",
-      "url": "https://systemdesignlaws.substack.com/p/indexes-dont-make-databases-fast",
-      "description": "What I learned the hard way is simple. Most read-scaling pain starts with the wrong lookup path, not the wrong database."
-    },
-    {
-      "title": "You Think Global SQL Is Just Cross-Region Writes… It Is Not",
-      "url": "https://systemdesignlaws.substack.com/p/you-think-global-sql-is-just-crossregion",
-      "description": "Global SQL is not broadcasting writes. It is about time control and coordination - and most engineers fail because they copy the..."
+      "description": "- Reads dominate writes 100:1. Scale in three tiers: optimize the database (indexing, denormalization), scale ho..."
     }
   ],
-  "updated": "2026-03-16T18:00:00Z"
+  "updated": "2026-08-01T10:42:44Z"
 }
