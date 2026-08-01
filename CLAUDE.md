@@ -22,8 +22,14 @@ newsletter/
 ├── plots/                  # Interactive HTML diagrams
 └── scripts/
     ├── create_draft.py     # Push markdown → Substack draft via API
+    ├── publish_draft.py    # Publish an existing Substack draft
+    ├── list_posts.py       # List/search published posts (duplicate check)
+    ├── delete_drafts.py    # Utility to clear Substack drafts (human-only)
+    ├── fetch_curriculum.py # Pull curriculum topics
     ├── markdown_to_prosemirror.py  # MD → ProseMirror JSON converter
-    └── delete_drafts.py    # Utility to clear Substack drafts
+    ├── batch_create_and_publish.py # Batch create + publish pipeline
+    ├── batch_publish.py    # Batch publish existing drafts
+    └── ...                 # and diagram/QA utilities (create_*_excalidraw.py, render_diagrams.py, svg_to_png.py, qa_frustrated_users.py)
 ```
 
 ## Content Rules (Summary)
@@ -33,7 +39,7 @@ newsletter/
 - **Diagrams:** 20-25 Excalidraw diagrams per article explaining every concept. Embedded inline as `![Alt](url)`. No raw Mermaid in articles.
 - **Voice:** Dense, practical, interview-ready. No filler.
 - **Length:** 800-1500 words per post.
-- **Substack-safe:** No em-dashes, no x, no pipe tables, ASCII only.
+- **Substack-safe:** ASCII only in article text. Use "-" instead of the em-dash character ("—"); use "x" instead of the multiplication sign ("×"). No pipe tables; describe schemas as structured bullet lists.
 - **Anti-duplicate:** Always check if article exists before publishing. If exists, edit and update - never create duplicates.
 - **Progress bars:** All batch operations show real-time progress bars in terminal.
 
@@ -78,13 +84,11 @@ Every piece of user feedback must cascade through ALL system layers. No exceptio
 **Propagation order:**
 1. Memory file (`.claude/projects/.../memory/`)
 2. `newsletter/docs/FEEDBACK_LOG.md`
-3. Skills (`.claude/skills/newsletter-draft/SKILL.md` + `.claude/newsletter/SKILL.md`)
-4. Agents (`newsletter/agents/*.md` + `.claude/newsletter/agents/*.md`)
-5. Sub-agents/verifiers (`.claude/newsletter/agents/verifiers/*.md`)
-6. `.claude/newsletter/TALK_RULES.md`
-7. `newsletter/docs/WORKFLOW.md` + `newsletter/docs/ARTICLE_TEMPLATE.md`
-8. This file (CLAUDE.md) if project-level
-9. Hooks if the feedback can be automated
+3. Agents (`newsletter/agents/*.md`)
+4. `newsletter/TALK_RULES.md`
+5. `newsletter/docs/WORKFLOW.md` + `newsletter/docs/ARTICLE_TEMPLATE.md`
+6. This file (CLAUDE.md) if project-level
+7. Hooks if the feedback can be automated
 
 **Goal:** Zero repeat corrections. The system learns permanently from every interaction.
 
@@ -123,7 +127,7 @@ Before creating ANY article:
 - All drafts must pass `tests/test_draft_body_structure.py` before pushing to Substack
 - ProseMirror output must have valid structure (no empty marks, all paragraph content is type=text)
 - Credentials live in `newsletter/scripts/.env` and `.substack-cookies.json` (gitignored)
-- Branch: `feature/newsletter-agent-system` — do not push to main without review
+- Branching: work on short-lived feature branches; merge to protected `main` via PR once required checks `test` and `e2e-website` pass. Never push to `main` directly.
 
 ## PR Auto-Merge and Branch Cleanup
 
