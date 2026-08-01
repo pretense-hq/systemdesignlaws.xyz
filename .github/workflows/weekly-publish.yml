@@ -19,6 +19,7 @@ on:
 
 permissions:
   contents: write
+  pull-requests: write
 
 concurrency:
   group: weekly-publish
@@ -45,7 +46,7 @@ jobs:
         run: |
           python3 -m venv newsletter/scripts/.venv
           newsletter/scripts/.venv/bin/pip install -q --upgrade pip
-          newsletter/scripts/.venv/bin/pip install -q python-substack python-dotenv requests
+          newsletter/scripts/.venv/bin/pip install -q -r newsletter/scripts/requirements.txt
 
       - name: Install diagram export tooling (best-effort; reused SVGs need none)
         continue-on-error: true
@@ -56,12 +57,21 @@ jobs:
       - name: Install Claude Code CLI
         run: npm i -g @anthropic-ai/claude-code
 
-      - name: Write Substack credentials from secret
+      - name: Write CI environment file (credentials + curriculum source)
         env:
           SUBSTACK_COOKIES: ${{ secrets.SUBSTACK_COOKIES }}
+          CURRICULUM_BASE_URL: ${{ vars.CURRICULUM_BASE_URL || secrets.CURRICULUM_BASE_URL || '' }}
         run: |
+          set -euo pipefail
           umask 077
+          # Never echo secret values to the log; only key names are printed.
           printf 'SUBSTACK_COOKIES=%s\n' "$SUBSTACK_COOKIES" > newsletter/scripts/.env
+          if [ -n "$CURRICULUM_BASE_URL" ]; then
+            printf 'CURRICULUM_BASE_URL=%s\n' "$CURRICULUM_BASE_URL" >> newsletter/scripts/.env
+            echo "Wrote keys: SUBSTACK_COOKIES, CURRICULUM_BASE_URL"
+          else
+            echo "Wrote keys: SUBSTACK_COOKIES (CURRICULUM_BASE_URL not configured; researcher uses local curriculum fallback)"
+          fi
 
       - name: Run weekly orchestration
         env:
@@ -77,18 +87,34 @@ jobs:
           path: .github/automation-logs/run.log
           if-no-files-found: ignore
 
-      - name: Commit results back (draft / backlog / published)
+      - name: Commit results back via PR (draft / backlog)
         if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          MODE: ${{ github.event.inputs.mode || 'publish' }}
+          BRANCH: weekly/results-${{ github.run_id }}-${{ github.run_attempt }}
         run: |
+          set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           # Scope strictly to content paths — never the venv, .env, or logs.
-          git add newsletter/drafts newsletter/backlog.json newsletter/published 2>/dev/null || true
+          # (newsletter/published is gitignored, so it is intentionally not added.)
+          git add -- newsletter/drafts newsletter/backlog.json
           if git diff --staged --quiet; then
             echo "No content changes to commit."
-          else
-            git commit -m "chore(weekly): ${{ github.event.inputs.mode || 'publish' }} run — newsletter update [skip ci]"
-            # Non-fatal: if a publish already happened, a failed push must not fail the
-            # job. The backlog reconciles on the next run via the anti-duplicate guard.
-            git push || echo "WARN: push failed; results are in the run but not committed (will reconcile next run)."
+            exit 0
           fi
+          # main is protected (PR-only merges), so push a results branch and open a
+          # PR. test.yml auto-merges it once the required checks pass. Any push or
+          # PR-creation failure must fail this step loudly — a swallowed failure
+          # here means backlog.json never advances and the same topic is
+          # reselected forever.
+          git checkout -b "$BRANCH"
+          git commit -m "chore(weekly): $MODE run — newsletter update"
+          git push origin "$BRANCH"
+          gh pr create \
+            --repo "${{ github.repository }}" \
+            --base main \
+            --head "$BRANCH" \
+            --title "chore(weekly): $MODE run results (run ${{ github.run_id }})" \
+            --body "Automated weekly $MODE run: draft and backlog updates. Auto-merges via test.yml once the required checks (test, e2e-website) pass."
