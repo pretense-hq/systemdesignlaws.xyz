@@ -98,7 +98,13 @@ elif grep -qi "credit balance is too low" "$LOG" || grep -qi "insufficient credi
   summary "### Weekly publish: BLOCKED — Anthropic credit balance too low. Add credits: https://console.anthropic.com/settings/billing"
   fail_tail
   exit 5
-elif grep -qiE "authentication_error|invalid x-api-key|x-api-key header is required|could not resolve authentication|oauth token (has )?expired|invalid bearer token" "$LOG"; then
+# Auth signatures cover both the raw API error types and the claude CLI's own
+# phrasing, seen verbatim in real runs (e.g. run 30205356675):
+#   "Failed to authenticate. API Error: 401 API key is invalid."
+#   "Invalid API key . Please run /login"
+# Bare "401" is deliberately NOT matched — only anchored phrases — so unrelated
+# log content (line counts, IDs) can never trip the credential branch.
+elif grep -qiE "authentication_error|invalid x-api-key|x-api-key header is required|could not resolve authentication|oauth token (has )?expired|invalid bearer token|failed to authenticate|api error: 401|api key is invalid|invalid api key|please run /login" "$LOG"; then
   summary "### Weekly publish: BLOCKED — ANTHROPIC_API_KEY invalid/expired. Rotate it: gh secret set ANTHROPIC_API_KEY"
   fail_tail
   exit 5
