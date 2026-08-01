@@ -4,14 +4,14 @@ Writes system design newsletter drafts. Upgraded quality bar. Follow `newsletter
 
 ## Core Rules (ENFORCED AT EVERY STEP)
 
-- **Original content only:** Curriculum topics. No external attribution. Content is standalone.
-- **25 diagrams:** Every article must have 20-25 Excalidraw diagrams. Minimum 20, target 25. Reject if fewer than 20.
+- **Original content only:** Curriculum topics. No external attribution. Content is standalone. Reject drafts with external URL references.
+- **25 diagrams:** Every article must have 20-25 Excalidraw diagrams. Minimum 20, target 25. Count all `![` references. Reject if fewer than 20.
 - **Anti-duplicate:** Always check `list_posts.py --search` before creating. Edit existing, never create duplicates.
 - **Progress bars:** All batch operations must show real-time ASCII progress bars.
 - **Adaptive rate limiting:** Slow at 70% capacity (3x delay), 90% (5x delay), 95% (heavy pause). NEVER hit 100%.
-- **Paywall at 30%** - Insert `{{PAYWALL}}` marker after ~30% of article content, before revealing the key solution/twist. Every article must have a paywall marker.
-- **Smaller diagrams** - Diagrams render at content width (728px). Source: ~960x480. Do not use full-bleed sizing.
-- **Rewrite content** - Substantially rewritten in original words. Different phrasing, original examples. Must not appear copied.
+- **Paywall at 30%:** Insert `{{PAYWALL}}` marker after ~30% of article content, before revealing the key solution/twist. Every article must have a paywall marker.
+- **Smaller diagrams:** Diagrams render at content width (728px). Source: ~960x480. Do not use full-bleed sizing.
+- **Rewrite content:** Substantially rewritten in original words. Different phrasing, original examples. Must not appear copied.
 
 ## Before writing
 
@@ -69,7 +69,7 @@ Or structured list with bold Q, brief A.
 - [ ] 20-25 diagrams total across all sections (minimum 20)
 - [ ] Every concept has its own inline embedded diagram
 - [ ] No filler phrases
-- [ ] ASCII-safe (- not -, x not x)
+- [ ] ASCII-safe (- not —, x not ×)
 - [ ] `{{PAYWALL}}` marker present after ~30% of content
 - [ ] No "- " prefix on sub-headlines
 - [ ] No leading blank lines at article start

@@ -4,11 +4,14 @@ Tightens prose and enforces TALK_RULES after Writer produces a draft. Reference 
 
 ## Core Rules (ENFORCED AT EVERY STEP)
 
-- **Original content only:** Curriculum topics. No external attribution. Content is standalone.
-- **25 diagrams:** Every article must have 20-25 Excalidraw diagrams. Reject if fewer than 20. Count all `![` references - must be >= 20.
+- **Original content only:** Curriculum topics. No external attribution. Content is standalone. Reject drafts with external URL references.
+- **25 diagrams:** Every article must have 20-25 Excalidraw diagrams. Minimum 20, target 25. Count all `![` references. Reject if fewer than 20.
 - **Anti-duplicate:** Always check `list_posts.py --search` before creating. Edit existing, never create duplicates.
 - **Progress bars:** All batch operations must show real-time ASCII progress bars.
 - **Adaptive rate limiting:** Slow at 70% capacity (3x delay), 90% (5x delay), 95% (heavy pause). NEVER hit 100%.
+- **Paywall at 30%:** Insert `{{PAYWALL}}` marker after ~30% of article content, before revealing the key solution/twist. Every article must have a paywall marker.
+- **Smaller diagrams:** Diagrams render at content width (728px). Source: ~960x480. Do not use full-bleed sizing.
+- **Rewrite content:** Substantially rewritten in original words. Different phrasing, original examples. Must not appear copied.
 
 ## Process
 
@@ -62,7 +65,7 @@ Tightens prose and enforces TALK_RULES after Writer produces a draft. Reference 
 - [ ] Complete paragraphs under every header
 
 ### Length
-- [ ] 800–1500 words total
+- [ ] 800-1500 words total (target for new drafts; the verifier flags out-of-range counts as WARN, not reject)
 
 ## On feedback received
 
