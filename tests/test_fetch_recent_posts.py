@@ -74,6 +74,37 @@ class TestParseRssToPosts(unittest.TestCase):
         finally:
             rss_path.unlink()
 
+    def test_malformed_html_raises_value_error(self):
+        """A feed URL redirecting to an HTML page must fail with a clear error."""
+        html = "<!DOCTYPE html><html><head><meta charset=utf-8></head><body><p>profile page</body></html>"
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".xml", delete=False) as f:
+            f.write(html)
+            rss_path = Path(f.name)
+        try:
+            with self.assertRaises(ValueError) as ctx:
+                parse_rss_to_posts(rss_path)
+            self.assertIn("not well-formed XML", str(ctx.exception))
+            self.assertIn("HTML", str(ctx.exception))
+        finally:
+            rss_path.unlink()
+
+    def test_non_rss_xml_raises_value_error(self):
+        """Well-formed XML that is not an RSS/Atom feed must be rejected."""
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".xml", delete=False) as f:
+            f.write('<?xml version="1.0"?><html><body>xhtml, not rss</body></html>')
+            rss_path = Path(f.name)
+        try:
+            with self.assertRaises(ValueError) as ctx:
+                parse_rss_to_posts(rss_path)
+            self.assertIn("not <rss> or <feed>", str(ctx.exception))
+        finally:
+            rss_path.unlink()
+
+    def test_missing_file_raises_value_error(self):
+        with self.assertRaises(ValueError) as ctx:
+            parse_rss_to_posts(Path("does-not-exist-feed.xml"))
+        self.assertIn("not found", str(ctx.exception))
+
 
 class TestRecentPostsJson(unittest.TestCase):
     ISO8601_REGEX = (
