@@ -41,5 +41,5 @@
       "description": "- Reads dominate writes 100:1. Scale in three tiers: optimize the database (indexing, denormalization), scale ho..."
     }
   ],
-  "updated": "2026-08-03T14:37:33Z"
+  "updated": "2026-08-04T14:09:42Z"
 }
