@@ -50,7 +50,9 @@ newsletter/
 3. **Writer** produces draft in `newsletter/drafts/[slug].md` + diagram in `newsletter/plots/`
 4. **Editor** tightens prose, cuts filler, enforces TALK_RULES
 5. **Verifier** runs quality checklist (definitions, no tables, no Mermaid, Q&A section)
-6. **Scheduler** runs `create_draft.py --draft [file]` to push to Substack
+6. **Scheduler** runs `create_draft.py --draft [file]` to push to Substack, then
+   `schedule_draft.py --at <ISO8601>` to set the send time. Publishing
+   immediately is the exception, not the default.
 
 ## Verification Commands
 
@@ -72,6 +74,12 @@ python3 newsletter/scripts/create_draft.py --draft [filename].md
 
 # Force new draft (skip duplicate check)
 python3 newsletter/scripts/create_draft.py --draft [filename].md --force-new
+
+# Schedule a draft for a future send (refuses past times and naive timestamps)
+python3 newsletter/scripts/schedule_draft.py --draft [filename].md --at 2026-08-25T09:00:00-07:00
+
+# Cancel a schedule, returning the post to draft
+python3 newsletter/scripts/schedule_draft.py --draft-id [id] --unschedule
 
 # Delete all Substack drafts (human-only, requires --yes)
 python3 newsletter/scripts/delete_drafts.py --yes

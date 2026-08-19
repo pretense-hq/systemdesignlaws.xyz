@@ -204,6 +204,42 @@ to "No duplicate - will create new".
 
 ---
 
+## 2026-08-19 - Scheduler published immediately; no way to set a cadence
+
+**Feedback:** The Scheduler agent could only create-then-publish-now. With 50
+topics queued and 8 published, that forces the backlog out in bursts and pins
+every send to whenever a human happened to run the script.
+
+**Root cause:** `publish_draft.py` was the only exit from a draft, and
+`agents/scheduler.md` encoded "publish immediately" as a Core Rule.
+
+**Fixed:**
+- Added `newsletter/scripts/schedule_draft.py`, backed by
+  `Api.schedule_draft(draft, draft_datetime)` in python-substack, which POSTs
+  `trigger_at` to `/drafts/{id}/scheduled_release`. Verified against the
+  installed library rather than assumed. `--unschedule` cancels.
+- `agents/scheduler.md`: "publish immediately" replaced with "every draft ends
+  either scheduled or published; prefer scheduled".
+- `docs/WORKFLOW.md` step 5b and `CLAUDE.md` scripts list + commands updated.
+- `tests/test_schedule_draft.py`: 10 tests, all passing.
+
+**Two refusals worth keeping (both guard un-undoable sends):**
+- A timestamp with no timezone offset is REFUSED unless `--assume-utc`.
+  Guessing sends the newsletter at the wrong hour, and it fails silently - the
+  call succeeds and the mistake only shows in the send.
+- A time in the past is REFUSED. Substack treats an elapsed schedule as
+  "publish now", so a mistyped year would send to the whole list with no undo.
+
+**Operational facts (do not relearn):**
+- `schedule_draft.py` imports `substack` LATE, inside `main()`, so the module
+  can be imported (and unit tested) under system `python3` without the venv.
+  Keep it that way: it is why `tests/test_schedule_draft.py` runs in plain
+  `python3 -m unittest discover -s tests`.
+- Substack's scheduling is server-side. Once scheduled, the send does not
+  depend on this repo, a cron, or a machine being awake.
+
+---
+
 ## Template reference
 
 - **Article structure**: `newsletter/docs/ARTICLE_TEMPLATE.md`
