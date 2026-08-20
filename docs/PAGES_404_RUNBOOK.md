@@ -68,6 +68,31 @@ redirects the `www.` variant to it automatically, so no second entry is needed.
 `tests/test_pages_custom_domain.py` locks this in and runs as part of the
 required `test` check.
 
+### 3. GitHub Actions cannot start runs either (same account-level fault)
+
+Every workflow run from 2026-08-19 onward ends as `startup_failure` with
+`path: BuildFailed`, zero jobs, and no workflow name - the run is never
+created, so this is not a fault in any workflow file. The CI on PR #14
+failed to start the same way; only the third-party Socket Security checks
+reported.
+
+Combined with `has_pages: false` on a private repo, the leading hypothesis is
+an account-level billing or plan problem on the `pretense-hq` organization:
+Pages from a private repo needs Team or Enterprise Cloud, and Actions on a
+private repo stops dispatching once the included minutes or the payment method
+lapse. Both symptoms clear together if that is the cause.
+
+Note the two symptoms began on different dates, so they may not be one event:
+`Update Recent Posts` failed *normally* (workflow ran, feed fetch failed) from
+2026-08-09, and only degraded to `startup_failure` on 2026-08-19.
+
+**Check first:** Organization settings -> Billing and plans, for a failed
+payment, an exhausted spending limit, or a downgrade to Free. Then
+Settings -> Actions -> General, to confirm Actions is still enabled.
+
+Until runs dispatch again, the required `test` and `e2e-website` checks cannot
+report, so no PR can auto-merge.
+
 ## Related, not yet fixed
 
 The daily `Update Recent Posts` workflow fetches
