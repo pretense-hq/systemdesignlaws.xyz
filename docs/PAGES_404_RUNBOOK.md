@@ -93,6 +93,34 @@ Settings -> Actions -> General, to confirm Actions is still enabled.
 Until runs dispatch again, the required `test` and `e2e-website` checks cannot
 report, so no PR can auto-merge.
 
+## Running CI locally while Actions is down
+
+Actions cannot dispatch runs, so the required checks cannot report. The same
+pipeline runs locally instead:
+
+```bash
+make ci        # both jobs: unit + schema + index.html structure + browser e2e
+make ci-fast   # skips the browser suite (no Playwright needed)
+```
+
+`scripts/ci_local.sh` mirrors both jobs in `.github/workflows/test.yml`. The
+difference from CI: the `e2e-website` job points Playwright at the live
+`https://systemdesignlaws.xyz`, which is down. Locally the script serves the
+repo on `127.0.0.1:8888` and sets `E2E_BASE_URL` to that, so the suite still
+validates the real page.
+
+Result as of 2026-08-20: **all checks pass locally, including all 5 browser
+tests.** The site's HTML, inline post data, subscribe section, and guardrail
+fallback are all correct - nothing in this repository is causing the 404. The
+fault is entirely hosting-side (Pages disabled), which is what the runbook
+steps above address.
+
+Playwright note: the pip package pins an exact browser build. If
+`PLAYWRIGHT_BROWSERS_PATH` holds a different build, `launch()` fails with
+"Executable doesn't exist". Install the matching release instead of downloading
+a second copy - for chromium 1194 that is `pip install playwright==1.56.0`. The
+script prints the mismatch when it detects one.
+
 ## Related, not yet fixed
 
 The daily `Update Recent Posts` workflow fetches
