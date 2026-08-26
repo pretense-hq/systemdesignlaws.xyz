@@ -147,3 +147,18 @@ loop reported exit 0 and the harness said "completed (exit code 0)". Caught only
 REMOTE what it held (`git ls-remote`) and re-counting unbacked commits — 23, unchanged.
 Same lesson as the missing `timeout`: **verify the end state with a different command than the
 one that did the work.**
+
+## Sensitive-shaped literals can be rewritten between you and disk
+A test probe was written containing an email-shaped literal. What landed on disk was a
+mutated synthetic with **no `@`**, so the probe matched nothing and the check reported a
+red that had nothing to do with the code under test.
+
+**Never let a sensitive-shaped literal be the thing that must survive transcription.**
+Build it at runtime from parts:
+
+    const AT = String.fromCharCode(64);
+    const addr = "alice" + AT + "example.com";
+
+Then `grep -a` the written file for what you intended, and assert the probe finds
+something on a known-good input before trusting a negative result. A probe that matches
+nothing looks identical to a feature that is broken.

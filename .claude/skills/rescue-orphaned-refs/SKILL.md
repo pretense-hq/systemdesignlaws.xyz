@@ -47,6 +47,30 @@ git clone --bare ~/archive-*.bundle /tmp/t && git -C /tmp/t tag -l   # PROVE it 
 **Verify the bundle by restoring it, not by its exit code.** `git bundle verify` printing a hash
 algorithm is not a restore test.
 
+## Before you conclude a scope block needs a human: check the TRANSPORT
+
+**Check the remote's TRANSPORT before concluding a scope block needs a human.**
+
+    git remote -v            # https:// or git@ ?
+    ssh -T git@github.com    # already authenticated?
+
+Measured 2026-08-26: a push was rejected with *"refusing to allow an **OAuth App**
+to create or update workflow `.github/workflows/test.yml` without `workflow` scope"*
+and this was reported as human-only ("run `gh auth refresh -s workflow`").
+
+**It was not.** The restriction is a property of the **OAuth App auth path**, not the
+repo, the ref type, or the tree. The blocked repo was the only one of 8 still on an
+**HTTPS** remote; its 7 siblings were already on `git@github.com:`. SSH authenticates by
+key, is not an OAuth App, and is not subject to the check. Pushing over SSH succeeded on
+the first attempt — no scope change, no browser auth, no history rewrite, every SHA
+preserved (the offending `test.yml` is present in the pushed tree).
+
+**Read the error's subject noun.** "refusing to allow an *OAuth App*" names the actor,
+not the resource — that is the clue that a different auth path is unaffected.
+
+`--dry-run` cannot test this: the check fires in the server's pre-receive hook, which a
+dry run never reaches. Push for real, or you have proved nothing.
+
 ## When W3 is blocked: GitHub workflow scope
 
 ```
