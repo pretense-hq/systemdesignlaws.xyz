@@ -47,9 +47,31 @@ Misfiling into WORK is the expensive direction. When unsure, IGNORE — it is re
 which is where the release process lives. Prove it both ways after writing the rule:
 
 ```bash
-git check-ignore -v .claude/worktrees   # must MATCH
-git check-ignore -v .claude/skills      # must NOT match (exit 1)
+git check-ignore -v .claude/worktrees/   # must MATCH -- note the trailing slash
+git check-ignore -v .claude/skills       # must NOT match (exit 1)
 ```
+
+### `check-ignore` answers about a path, not about a rule
+
+A directory-only pattern reports **NO MATCH when the directory does not exist** — so a
+correctly-guarded repo and one carrying no rule at all return the identical exit 1. Measured
+across eight repos: three had no rule whatsoever, and the verification pass reported PASS.
+
+Query a path the pattern can actually match — a **trailing slash**, or anything inside it —
+rather than the bare directory name. Verified on git 2.53.0, rule `.claude/worktrees/` present:
+
+| query | directory absent | directory present |
+|---|---|---|
+| `.claude/worktrees` | **exit 1 — the false green** | exit 0 |
+| `.claude/worktrees/` | exit 0 | exit 0 |
+| `.claude/worktrees/.probe` | exit 0 | exit 0 |
+
+`--no-index` does **not** fix this; it still exits 1. Creating a throwaway directory first also
+works, but needs no cleanup if you just add the slash. Then run the control: in a repo with no
+such rule the trailing-slash form must **still** exit 1, or you have only made the check
+unfalsifiable. When the question is really *"is the rule present"*, read the rule:
+`grep -n worktrees .gitignore` — no output means NO RULE, which is a different answer from
+*unmatched*.
 
 ## A worktree cannot be committed into its own repo
 
@@ -68,6 +90,20 @@ does not.
 
 Check **both** halves: the directory is genuinely gone **and** the commit is on a remote. A
 relocated worktree also reports `prunable`, and pruning it has severed live branches.
+
+## Identity is per-repo, and a stale one is invisible
+
+`user.email` resolves per repository, and a local value silently overrides the global one.
+Measured in an eight-repo workspace: one repo carried a test-fixture identity
+(`user.name=task797 <test@example.com>`) while seven siblings were correct — two commits landed
+attributed to the fixture. Nothing warns. The commit succeeds and reads as ordinary.
+
+```bash
+for d in */.git; do r=${d%/.git}; printf '%-24s %s <%s>\n' "$r" \
+  "$(git -C "$r" config user.name)" "$(git -C "$r" config user.email)"; done
+```
+Run it **before** the first commit in each repo. Correcting authorship afterwards means
+rewriting history, which this skill refuses — so this is the only cheap moment to catch it.
 
 ## Refuses to do silently
 Prune a worktree on one half of the check · delete a file a service still reads · rewrite

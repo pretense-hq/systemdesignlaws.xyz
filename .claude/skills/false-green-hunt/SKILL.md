@@ -33,7 +33,7 @@ Before asserting absence, assert the artefact **exists and is non-empty**. Befor
 
 A compliance platform reports a policy **approved**. That is a status field, not a reading of the
 body. Observed 2026-08-26: an ISO 27001 Clause 4.3 scope statement sat `approved v1.0` and green
-while its text read `The Scope of Pretense's ISMS is: {scope of ISMS}`. Every framework page was
+while its text read `The Scope of <Company>'s ISMS is: {scope of ISMS}`. Every framework page was
 green; the document was a blank template.
 
 Green on a dashboard is arm 1 at best. Fetch the body through the API and grep it. See
@@ -53,12 +53,40 @@ upload log, not the exit code.** Any tool that can say "already done" can say it
 
 Both caught in one session, in the checker itself:
 
-1. **Prose satisfies a substring check.** `grep -q '\bStripe\b'` passed on the phrase
-   *"AWS/Stripe/GitHub keys"* — a key type, not an in-scope system. The document's inventory did
-   not list Stripe at all.
+1. **Prose satisfies a substring check.** `grep -q '\bDatadog\b'` passed on the phrase
+   *"AWS/Datadog/GitHub keys"* — a key type, not an in-scope system. The document's inventory did
+   not list Datadog at all.
 2. **The wrong table satisfies a scoped check.** After narrowing to markdown table rows, deleting
-   Supabase from the system inventory *still passed*, because Supabase also appeared in a
-   Complementary Subservice Organization Controls table. Arm 2 caught it; the first fix had not.
+   the database provider from the system inventory *still passed*, because its name also appeared
+   in a Complementary Subservice Organization Controls table. Arm 2 caught it; the first fix had not.
 
 Lesson: when arm 2 fails to redden, the bug is in the check, not the seed. Re-scope and re-seed
 until deletion actually reddens the specific assertion you intended.
+
+## Two guards that pass on the defect they exist to catch
+
+**A one-directional consistency check silently passes EXTRAS.** A guard that walks the
+canonical set and asserts each item exists in every copy catches drift and deletion — and is
+structurally blind to a file one copy carries that the canonical set does not, because that
+file is compared to nothing. Proven by planting a rogue file in one copy and watching the guard
+print PASS.
+
+```
+for item in canonical: present in copy?       catches drift + missing
+for item in copy:      present in canonical?  catches EXTRAS  <- the half usually absent
+```
+Walk the union and assert set equality **both ways**. A drift guard that cannot fail on an
+addition is a drift guard for half the ways things drift.
+
+**A guard with zero production callers proves nothing about production.** A catalog check
+compared a hand-maintained fixture with a published list. Nothing in the running system read
+that fixture, so drift in the provider it existed to guard could never reach it — and the
+fixture became a second source of truth needing its own sync. Before trusting any guard, ask
+**what feeds it its data**. If that is not the same source production reads, the guard is
+measuring its own copy and the green is about the copy.
+
+## Self-test
+Take any guard you rely on and delete the thing it guards: it must go red and name it. Restore
+it and feed the guard a valid case: it must go green. Then add something the guard was never
+told about — an extra file, a new provider value: if it stays green, you have measured only what
+you already listed.

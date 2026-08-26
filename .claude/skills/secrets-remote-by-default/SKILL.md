@@ -58,6 +58,26 @@ the model reads is not what is on disk.** Transcribing writes a placeholder into
 Piping is immune, so this procedure works *with* such a layer instead of depending on its
 reversal being perfect.
 
+## Through a rewriting layer, conclude from metadata — never from the characters
+
+Measured: every credential value an agent read through such a layer produced **zero**
+`grep -F` matches against the same bytes on disk. Nothing announces the substitution — the
+values arrive well-formed and credential-shaped, so the wrong conclusion gets reported with
+full confidence. An agent that trusts what it reads reports the wrong key, the wrong prefix,
+the wrong provider.
+
+Metadata survives, because the *answer* is a number or a boolean — not a secret, so a rewriter
+has nothing to swap:
+
+```bash
+awk -F= '/^KEY=/{print length($2)}' .env    # length
+grep -c '^KEY=sk-' .env                      # prefix present: 1 or 0
+shasum -a 256 .env | cut -c1-12              # identity, for comparing two copies
+```
+Length, character class, prefix, count, digest — decide from those. **If a conclusion requires
+the literal value, it is not a conclusion you may draw**: pipe the value into the tool that
+needs it and compare fingerprints instead.
+
 ## Check the vault before storing anything
 
 Frequently the value is already there. Comparing first turns a migration into a no-op and avoids
