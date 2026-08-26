@@ -1,6 +1,8 @@
 ---
 name: infra-audit
 description: Audit live cloud state — AWS, Vercel, Supabase, Stripe, Vanta, GitHub. Read-only. Trigger on "infra audit", "what's deployed", "is prod healthy", "cloud state", "who is on what tier".
+portable: false
+portable_reason: audits THIS company's specific cloud stack and the traps in each account. Losing option: describe generic cloud auditing -- rejected, every line is a measured finding about a named account (api.pretense.ai on a bare EC2 IP, Supabase free tier on prod).
 ---
 
 # Report reachability honestly

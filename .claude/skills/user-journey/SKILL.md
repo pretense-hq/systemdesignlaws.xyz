@@ -1,6 +1,8 @@
 ---
 name: user-journey
 description: Map each stage of the customer journey to the technical capability that carries it, and find the stage that is actually broken. Use when prioritising, when adoption is flat, before a launch, or when deciding what to build next. Trigger on "user journey", "funnel", "onboarding", "activation", "why aren't people using", "what should we build".
+portable: false
+portable_reason: the 11-stage capability table maps THIS product's own commands and signals. Losing option: genericise rows 4-5 ('pretense scan'/'pretense run') -- rejected, the other nine rows are equally specific, so it would pass the grep while remaining entirely about this product.
 ---
 
 # Every journey stage is a capability, and one of them is broken

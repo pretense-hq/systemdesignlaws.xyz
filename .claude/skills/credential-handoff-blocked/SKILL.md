@@ -93,3 +93,60 @@ evidence is worth as much as one that works, because the next session otherwise 
 **A launcher flag is silently dropped when the app is already running.** `open -a "App" --args --flag`
 focuses the existing instance instead. Check for the listener before assuming the flag took effect.
 
+
+## W3, as it actually played out — the flag is not enough
+
+`--remote-debugging-port` alone does **nothing** on a current Chrome. Since Chrome 136 the flag is
+**silently ignored when the profile is the default user-data-dir** — hardening against exactly this
+pattern, because automating an authenticated profile is how cookie-theft malware behaves.
+
+The failure is silent in the worst way: the flag appears in `ps`, no error is printed, and no port
+opens.
+
+```bash
+ps aux | grep -o 'remote-debugging-port=[0-9]*'   # present
+curl -s -m 2 http://127.0.0.1:9222/json/version   # nothing
+ls "$HOME/Library/Application Support/Google/Chrome/DevToolsActivePort"  # absent
+```
+**What works** — a second Chrome on a *copy* of the profile, so the user's own browser is untouched:
+
+```bash
+CD="$HOME/Library/Application Support/Google/Chrome"; T=/tmp/chrome-cdp
+mkdir -p "$T/Profile 23"; cp "$CD/Local State" "$T/"
+for f in Cookies "Login Data" Preferences "Secure Preferences" "Web Data" \
+         "Local Storage" "Session Storage" IndexedDB Network; do
+  cp -R "$CD/Profile 23/$f" "$T/Profile 23/" 2>/dev/null   # session files only, skip caches
+done
+"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
+  --user-data-dir="$T" --profile-directory="Profile 23" --remote-debugging-port=9222 \
+  --no-first-run --no-default-browser-check &
+```
+Identify the right profile by email, never by guessing the directory number:
+
+```bash
+for d in "$CD"/Default "$CD"/Profile*; do
+  python3 -c "import json;p=json.load(open('$d/Preferences'));ai=p.get('account_info') or [];print('$d', ai[0].get('email') if ai else '')"
+done
+```
+**Ask which account before copying.** The profile carries live session cookies; naming the account
+is the user's decision, and `Default` is frequently the wrong one. Delete the copy when finished
+(`rm -rf /tmp/chrome-cdp`) and say so — it holds credentials.
+
+Then `setInputFiles()` drives the hidden file input directly. That is the capability nothing else
+in the stack has: an extension can click and read via injected JS, but it cannot open an OS file
+picker.
+
+## Driving an SPA that never goes idle
+
+When `screenshot`, `read_page`, `find` and `file_upload` all time out on `document_idle` but the
+page is fine (`document.readyState === "complete"`), the wait is the bug, not the page.
+
+| Need | Use |
+|---|---|
+| Read state | `page.innerText('body')` after `waitUntil:'domcontentloaded'` + explicit `waitForTimeout(8000)` |
+| Never | `waitUntil:'networkidle'` — an SPA with a live connection never reaches it |
+| First load | Allow 14s before concluding an element is absent — a 6s check reported an uploaded draft missing that a 14s check found |
+
+That last row was a near-miss: the API said the draft existed, a short UI check said it did not, and
+the API was right. **When two sources disagree, re-measure the cheap one before believing the
+alarming one.**

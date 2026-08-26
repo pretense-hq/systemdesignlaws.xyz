@@ -1,6 +1,8 @@
 ---
 name: egress-review
 description: Review any change touching the proxy egress path, the mutator, the scanner, or config that reaches egress. P0, outweighs all other concerns. Trigger on "review this diff", "egress", "mutation", "proxy change", "scanner", before merging anything in apps/proxy or packages/mutator.
+portable: false
+portable_reason: reviews THIS product's mutation proxy; the P0 invariant it enforces (reversible mutation at egress, pretense.yaml config) does not exist elsewhere. Losing option: genericise 'pretense.yaml' to 'the config file' -- rejected, it would claim portability for a skill whose entire subject is one product's egress path.
 ---
 
 # Mutation integrity outranks everything

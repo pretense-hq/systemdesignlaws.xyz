@@ -1,6 +1,8 @@
 ---
 name: compliance-doc-integrity
 description: Verify what a compliance platform actually serves, not what its dashboard says. Use before trusting any policy, system description, SSP or scope statement, and before citing one as audit evidence. Trigger on "is our policy ready", "system description", "scope statement", "SSP", "Vanta says green", "upload the policy", "are we audit ready", "SOC 2 / ISO 27001 / CMMC document".
+portable: false
+portable_reason: worked example is THIS company's Vanta tenant, ISMS scope statement and system inventory; the named evidence is what makes the claim re-checkable. Losing option: strip vendor names and the dated observation -- rejected, it converts verifiable evidence into an anecdote and drops the 'Vanta says green' trigger people actually type.
 ---
 
 # Approved is not filled in

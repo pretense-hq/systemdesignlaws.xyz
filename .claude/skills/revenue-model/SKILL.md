@@ -1,6 +1,8 @@
 ---
 name: revenue-model
 description: Size revenue, ROI, and client budget from measured production usage rather than assumptions. Trigger on "revenue", "pricing", "MRR", "ROI", "what should we charge", "budget for clients", "metering", "mutation tokens".
+portable: false
+portable_reason: cites THIS codebase's metering identifiers (CliUsageEvent, meterForStripe, STRIPE_PRICE_IDS, audit.db) and its measured billing gaps. Losing option: replace identifiers with 'the metering functions' -- rejected, it yields a FALSE portable signal while the rest of the skill stays product-specific.
 ---
 
 # Measure the meter before you price it

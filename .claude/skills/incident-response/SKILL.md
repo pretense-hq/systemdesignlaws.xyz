@@ -1,6 +1,8 @@
 ---
 name: incident-response
 description: Run the Pretense incident-response pipeline end to end — intake, telemetry, diagnosis, runbook retrieval, a human approval gate, then approved execution, verification, stakeholder comms, and a memory record. Use when an alert fires or a Pretense prod/staging surface is reported broken (www.pretense.ai down, backend /health failing, deploy broken, billing/webhook mismatch, DB/Supabase issue, CDN/release problem). Trigger on "incident", "alert", "X is down", "prod is broken", "on-call".
+portable: false
+portable_reason: names THIS company's production surfaces (www.pretense.ai, backend /health) and its incident subagent pipeline. Losing option: parameterise the surfaces -- rejected, the runbook value IS the specific surfaces and their probes.
 ---
 
 # Pretense incident response
