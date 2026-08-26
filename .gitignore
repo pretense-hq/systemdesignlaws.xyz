@@ -9,7 +9,11 @@ node_modules/
 .venv/
 
 # Claude
-.claude/
+# Ignore .claude CONTENTS, not the directory itself: git cannot re-include a
+# path inside an excluded directory, so a blanket `.claude/` would silently
+# swallow the version-controlled skills below no matter what negation follows.
+.claude/*
+!.claude/skills/
 
 # Cursor (keep .cursor/rules/ for project; skills stay local, not pushed)
 .cursor/*
