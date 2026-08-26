@@ -60,3 +60,36 @@ about your request, which sends the next person debugging their own code.
 Given a presigned POST whose policy field is a short block repeated many times, it must refuse
 to transcribe, must not fall back to base64-through-context, and must report which of the five
 routes it eliminated and how.
+
+## First, diagnose which layer is blocking
+
+| Symptom | Layer | Verify with |
+|---|---|---|
+| `SignatureDoesNotMatch`, or credentials look like repeating blocks | **Our own proxy tokenized them** | `echo "$Policy" \| base64 -d \| head -c 40` — real decodes to `{"expiration":...` |
+| `executeScript waited 45000ms for document_idle` | **Tool waits for an event an SPA never fires** | `javascript_tool` still works — check `document.readyState` |
+| `Runtime.evaluate timed out` | **Your own `await` hung**, renderer is fine | Re-run a *synchronous* expression |
+| Fetch pending forever, but the server logs `200` | **Chrome blocked response delivery** (mixed content / PNA) | `lsof -nP -iTCP:$PORT` shows ESTABLISHED + server log shows 200 + promise still pending |
+
+## What a file picker costs you
+
+`file_upload` needs an element `ref` from `read_page`/`find`. On an SPA that never reaches
+`document_idle`, **both of those block while `javascript_tool` still works**. So you can click,
+navigate and read via JS — everything except selecting a file. Knowing that boundary early stops
+you retrying the wrong tool.
+
+## Tested against a real compliance platform (2026-08-26)
+
+Each route below was RUN, not reasoned about. Record negative results — a route ruled out with
+evidence is worth as much as one that works, because the next session otherwise retries it.
+
+| Route | Result |
+|---|---|
+| Local HTTP server the page fetches from | **FAILS** — the socket opens and the server logs `200`, but the response never reaches the HTTPS page and the promise hangs rather than rejecting. The server log is the wrong side of the boundary: assert on the page-side promise |
+| Chunked base64 into page memory | **WORKS, expensive** — no network boundary, but a 13 KB file is ~18 K characters through context. One small file only |
+| Restart the browser with a debugging port, attach over CDP | **BEST** — the existing profile keeps the session, and `setInputFiles()` reaches the OS file picker no other path can. Costs the user their open tabs, so it is their call to make |
+| Copied browser profile | last resort — copies session cookies; privacy-sensitive and fragile while the browser holds the lock |
+| Hand the file to a human | **always available, and not a failure state** |
+
+**A launcher flag is silently dropped when the app is already running.** `open -a "App" --args --flag`
+focuses the existing instance instead. Check for the listener before assuming the flag took effect.
+
