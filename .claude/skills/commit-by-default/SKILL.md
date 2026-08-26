@@ -66,7 +66,43 @@ rather than the bare directory name. Verified on git 2.53.0, rule `.claude/workt
 | `.claude/worktrees/` | exit 0 | exit 0 |
 | `.claude/worktrees/.probe` | exit 0 | exit 0 |
 
-`--no-index` does **not** fix this; it still exits 1. Creating a throwaway directory first also
+`--no-index` does **not** fix this; it still exits 1.
+
+### Two more traps — and the direction of your assertion decides the query
+
+There are **three** traps, and each fix is blind to the others. Which ones bite you depends on
+whether you are asserting a path *must* be ignored or *must not* be.
+
+| # | Trap | Symptom | Fix |
+|---|---|---|---|
+| a | directory **absent** | plain exits 1 → false **green** | trailing slash |
+| b | path is **tracked** | plain exits 1 *regardless of a matching rule* → false **green** | `--no-index` |
+| c | `.gitignore` is **CRLF** | a lone `\r` is a one-char pattern, and `--no-index` + a trailing-slash **directory** query spuriously matches it → false **red** | query a real **file** path |
+
+So the two directions need different queries, and using one for both leaves a check that cannot fail:
+
+```bash
+# "must be ignored"  (dir often absent -> trap a):
+git check-ignore -q '.claude/worktrees/'                    # trailing slash, no --no-index
+
+# "must NOT be ignored" (files are tracked -> traps b and c):
+probe=$(git ls-files '.claude/skills/*/SKILL.md' | head -1)
+[ -n "$probe" ] && git check-ignore -q --no-index "$probe"  # real FILE path
+```
+
+**Measured, 2026-08-26.** A release gate asserted *".claude/skills is ignored in 0 repos"* and
+exited 0 **with a real `.claude/skills/` rule planted** — trap (b), vacuous for as long as the
+files stayed tracked. Adding `--no-index` exposed it, and immediately produced a false red in
+4 of 8 repos whose `.gitignore` is CRLF throughout — trap (c). Only the real-file query is
+right in both directions.
+
+**No tracked file means no assertion.** If `ls-files` returns nothing there is nothing to test;
+report UNVERIFIED, never PASS.
+
+**Both arms, every time.** Plant a genuine rule and confirm the check fails naming *only* the
+repo you planted it in; then remove it and confirm it passes. A check that has only ever been
+seen green is not evidence — and the false red is as informative as the false green, because it
+tells you the query is matching something other than what you meant. Creating a throwaway directory first also
 works, but needs no cleanup if you just add the slash. Then run the control: in a repo with no
 such rule the trailing-slash form must **still** exit 1, or you have only made the check
 unfalsifiable. When the question is really *"is the rule present"*, read the rule:
