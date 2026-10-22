@@ -34,16 +34,7 @@ newsletter/published/
 newsletter/plots/png/
 
 # ── Credential files: every shape, not just the common one ──────────────────
-# Added 2026-08-23 after a repo-wide sweep found two committed credential
-# files whose names the existing rules did not match:
-#
-#   pretense/env                 STRIPE_SECRET_KEY, SUPABASE_SERVICE_ROLE_KEY
-#                                (commit 8ca65368, still on origin/hus-local)
-#   pretense-backend/.env        DATABASE_URL, API_KEY_SECRET_ENCRYPTION_KEY,
-#                                ADMIN_JWT_SECRET and 20 more
-#                                (commit 0806edd, reachable from main)
-#
-# See pretense/docs/security/2026-08-23-credential-exposure-hus-local.md.
+# Covers every credential-file shape seen in a repo-wide sweep, not just `.env`.
 #
 # The bare-`env` rules are root-anchored on purpose: some repos here have a
 # real src/lib/env.ts, and a pattern like `env.*` would shadow source. A rule
