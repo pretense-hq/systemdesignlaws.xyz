@@ -71,17 +71,32 @@ Script uploads PNGs from `newsletter/plots/png/` to Substack CDN. Rate limits ha
 - Substack draft edit URL
 - Excalidraw diagram path (`newsletter/plots/excalidraw/[name].excalidraw`)
 
-**Step 5b: Create/update + publish (no draft-only)**
-- If article exists (draft or published) → update it. If not → create and publish.
+**Step 5b: Create/update, then schedule or publish (never draft-only)**
+- If article exists (draft or published) → update it. If not → create it.
+- Every draft must end either **scheduled** or **published**. A draft left in
+  neither state is a bug.
 - Batch (all pattern articles): `python3 newsletter/scripts/batch_create_and_publish.py`
-- Single article: `create_draft.py` then `publish_draft.py`:
+- Single article, scheduled (the default):
 ```bash
 python3 newsletter/scripts/create_draft.py --draft [filename].md
+python3 newsletter/scripts/schedule_draft.py --draft [filename].md \
+  --at 2026-08-25T09:00:00-07:00
+```
+- Single article, published now (time-sensitive, or a human asked):
+```bash
 python3 newsletter/scripts/publish_draft.py --draft [filename].md
 ```
 - Add article metadata to `newsletter/docs/article_metadata.json` (tags, SEO, share options) before publish.
-- Publishes (not draft-only). Updates draft with SEO, publishes, optionally sends email + auto-shares.
 - Tags: Add manually in Substack editor (Settings sidebar > Tags)
+
+**Scheduling is preferred.** Publishing the moment an article is finished
+forces the backlog out in bursts and pins the send time to whenever someone is
+at a keyboard. One article a week, same weekday, same hour.
+
+`schedule_draft.py` refuses a time in the past or a timestamp with no timezone
+offset. Substack treats an elapsed schedule as "publish now", so a mistyped
+year would send to the whole list with no undo, and a missing offset sends at
+the wrong hour without any error. Cancel with `--unschedule`.
 
 With `publish_draft.py --no-publish`: only updates metadata, does not publish.
 
