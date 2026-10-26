@@ -20,7 +20,7 @@
 
 ---
 
-## The Problem
+## The Starting Point
 
 Picture a ride-sharing app split into rider, driver, pricing and payments services. With a separate entry point per service, the client must know four hostnames, and four teams each write their own token checks, rate limits and certificate handling. The weakest copy becomes the way in.
 
@@ -40,7 +40,7 @@ The gateway maps a request to a backend by path prefix, host or header: /rides g
 
 ### Authentication
 
-**What is authentication?** Proving who the caller is. The gateway validates the token on every request, rejects bad ones with a 401 before they consume backend capacity, and forwards a trusted identity header downstream. Fine-grained authorization ("may this user cancel this ride?") stays in the owning service, which has the data to decide.
+**What is authentication?** Proving who the caller is. The gateway validates the token on every request, answers invalid ones with a 401 before they consume backend capacity, and forwards a trusted identity header downstream. Fine-grained authorization ("may this user cancel this ride?") stays in the owning service, which has the data to decide.
 
 ### Rate Limiting
 
@@ -66,7 +66,7 @@ Every request passes through, so the gateway emits access logs, latency histogra
 
 ## Gateway vs Load Balancer vs Service Mesh
 
-- **Load balancer** - Spreads traffic across identical replicas at layer 4 (TCP) or layer 7 (HTTP). Knows replica health only; user identity is the gateway's job.
+- **Load balancer** - Spreads traffic across identical replicas at layer 4 (TCP) or layer 7 (HTTP). Knows replica health; user identity is the gateway's job.
 - **API gateway** - Layer 7 policy for north-south traffic (clients entering the system). Knows identities, quotas, routes and versions.
 - **Service mesh** - A proxy beside every service instance handling east-west traffic (service to service): mutual TLS, retries, timeouts, per-hop telemetry.
 
@@ -90,7 +90,7 @@ They stack: client -> layer 4 load balancer -> gateway fleet -> services, with a
 - The interview is about storage, ranking or a data pipeline. Draw one box labeled "gateway (auth, rate limit)" and move on.
 - Callers are internal batch jobs.
 
->> Strong candidates name the gateway, state the two or three jobs it does in this design, and spend their time on the hard part of the problem.
+>> Strong candidates name the gateway, state the two or three jobs it does in this design, and spend their time on the core of the design.
 
 ---
 
@@ -102,7 +102,7 @@ The follow-up is always "is this a single point of failure?" It is one logical p
 
 **Availability math.** Serial components multiply. A gateway at 99.99% in front of a service at 99.9% gives 0.9999 x 0.999 = 0.9989, about 99.89%. Replication is what keeps the gateway's share small. For scale, 99.9% still allows 0.001 x 8,760 hours = 8.76 hours of downtime a year.
 
-**Other risks.** A bad config push breaks every route at once, so roll config out gradually. Per-route timeouts and circuit breakers stop one slow service from tying up every connection.
+**Other risks.** A config push reaches every route at once, so roll config out gradually. Per-route timeouts and circuit breakers keep one slow service contained so connections stay free.
 
 <!-- DIAGRAM: Nine gateway instances across zones A, B, C behind a load balancer; zone C crossed out; remaining six instances carry 60k rps -->
 
@@ -110,11 +110,11 @@ The follow-up is always "is this a single point of failure?" It is one logical p
 
 ## The Egress Gateway
 
-An **egress gateway** is the outbound mirror: a proxy that every request leaving a private network must pass through. Network rules block direct internet access, so the proxy is the only exit.
+An **egress gateway** is the outbound mirror: a proxy that every request leaving a private network must pass through. Network rules block direct internet access, so the proxy is the single exit.
 
-- **Destination allowlist** - Only approved external hosts are reachable, so a compromised workload can send data only to approved hosts.
+- **Destination allowlist** - The reachable set is the approved external hosts, so even a compromised workload sends data to approved hosts alone.
 - **Credential stripping** - Removes tokens, cookies and internal headers that belong inside the network.
-- **Credential injection** - Real third-party secrets live only in the proxy, which attaches the real key on the way out, so stolen workload memory holds zero reusable credentials.
+- **Credential injection** - Real third-party secrets live in the proxy alone, which attaches the real key on the way out, so stolen workload memory holds zero reusable credentials.
 - **SSRF defense** - When the system fetches user-supplied URLs (webhooks, link previews), the proxy refuses private ranges such as 10.0.0.0/8 and the 169.254.169.254 cloud metadata address.
 - **Audit** - One log of every external call.
 
@@ -147,7 +147,7 @@ Token and scope checks at the gateway; resource-level checks in the owning servi
 
 Shared counters keyed by user and window. Local counters multiply the limit by the instance count.
 
-### "How do you stop a service from leaking secrets to the internet?"
+### "How do you keep a service's secrets inside the network?"
 
 Force outbound traffic through an egress gateway that allowlists destinations, strips or injects credentials, and logs every call.
 

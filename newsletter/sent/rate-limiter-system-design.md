@@ -68,7 +68,7 @@ Flow: resolve the client key, look up the rule in the local cache, send one scri
 **What is a sliding window counter?** Keep this window's count and the previous window's, and weight the previous one by how much still overlaps. Limit 100/min, previous minute 80, current 30, 15 seconds in: the previous window covers 45/60 = 0.75 of the rolling minute, so the estimate is 80 x 0.75 + 30 = 90. Allowed. It assumes the previous minute was evenly spread, which is close enough.
 
 - **Token bucket** - Pros: controlled bursts, two fields of state. Cons: two knobs to tune. The default.
-- **Sliding window log** - Pros: exact. Cons: memory scales with volume. Only for low-volume, high-stakes limits like logins.
+- **Sliding window log** - Pros: exact. Cons: memory scales with volume. Best for low-volume, high-stakes limits like logins.
 - **Sliding window counter** - Pros: smooth, tiny state. Cons: approximate. For strict per-minute limits.
 
 ---
@@ -103,19 +103,19 @@ Calling a central Redis from every region costs 70-150 ms per request, far past 
 
 <!-- DIAGRAM: Redis timeout at 5 ms branches to fail open, fail closed, or a per-node local limiter -->
 
-**What is fail-open?** Allow the request when the limiter is down or times out. Backends lose protection exactly when something is already wrong. Right for ordinary reads.
+**What is fail-open?** Allow the request when the limiter is down or times out. Backends run unprotected exactly when the system is already under strain. Right for ordinary reads.
 
 **What is fail-closed?** Reject when the limiter is down or times out. Protects SMS sends, payments and login endpoints, at the cost of an outage on those paths.
 
-The middle path is an in-memory limiter on each gateway. With a 1,000/min limit and 50 nodes behind an even load balancer, each node allows 1,000 / 50 = 20/min per key: approximate but bounded. Wrap the Redis call in a 5 ms timeout and a circuit breaker so a sick shard trips to the fallback instead of slowing every request.
+The middle path is an in-memory limiter on each gateway. With a 1,000/min limit and 50 nodes behind an even load balancer, each node allows 1,000 / 50 = 20/min per key: approximate but bounded. Wrap the Redis call in a 5 ms timeout and a circuit breaker so a sick shard trips to the fallback and every other request stays fast.
 
 ---
 
 ## Common Interview Questions
 
-- **"Why share counters instead of counting in each gateway's memory?"** - Each node sees a slice of traffic, so the effective limit multiplies by node count.
-- **"Why Redis instead of a database?"** - Every request is a write. At 1M writes/sec you need in-memory speed, and losing a counter only grants a brief extra burst.
-- **"How do you handle one abusive client?"** - It hammers a single shard. Cache rejections at the gateway until retry-after passes, so the client stops reaching Redis.
+- **"Why share counters over counting in each gateway's memory?"** - Each node sees a slice of traffic, so the effective limit multiplies by node count.
+- **"Why Redis over a database?"** - Every request is a write. At 1M writes/sec you need in-memory speed, and a lost counter grants just a brief extra burst.
+- **"How do you handle one abusive client?"** - It hammers a single shard. Cache rejections at the gateway until retry-after passes, so those calls end at the gateway.
 - **"How do you roll out a new rule safely?"** - Run it in shadow mode, logging would-be rejections, then enforce once the numbers look right.
 
 ---

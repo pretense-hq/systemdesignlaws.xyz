@@ -1,16 +1,16 @@
 # Consistent Hashing
 
-**TL;DR** - Modulo hashing reshuffles almost every key when the cluster size changes. Consistent hashing puts nodes and keys on a ring so a membership change moves only about 1/N of the keys. Add virtual nodes for even load, walk the ring for replicas, and remember it balances keys; traffic needs its own fix.
+**TL;DR** - Modulo hashing reshuffles almost every key when the cluster size changes. Consistent hashing puts nodes and keys on a ring so a membership change moves about 1/N of the keys. Add virtual nodes for even load, walk the ring for replicas, and remember it balances keys; traffic needs its own fix.
 
->> 30-second elevator pitch: "I map keys and servers onto the same hash ring. A key belongs to the first server clockwise from it. When a server joins or dies, only one slice of the ring changes owner. Each server gets many virtual positions, so load stays even and a failure spreads across all survivors instead of crushing one neighbor."
+>> 30-second elevator pitch: "I map keys and servers onto the same hash ring. A key belongs to the first server clockwise from it. When a server joins or dies, one slice of the ring changes owner. Each server gets many virtual positions, so load stays even and a failure spreads evenly across all survivors."
 
 ---
 
-## The Problem: Modulo Hashing Breaks on Resize
+## Why Modulo Hashing Reshuffles on Resize
 
 You run a cache tier with 4 servers and route with server = hash(key) mod 4. It is fast, stateless, and even. Then you add a fifth server.
 
-Under hash(key) mod 5, a key stays put only if its hash leaves the same remainder under both divisors. For uniform hashes that happens with probability 1/(N+1), so going from 4 to 5 servers keeps 20 percent of keys and moves 80 percent. In general, adding one node to N moves N/(N+1) of all keys.
+Under hash(key) mod 5, a key stays put exactly when its hash leaves the same remainder under both divisors. For uniform hashes that happens with probability 1/(N+1), so going from 4 to 5 servers keeps 20 percent of keys and moves 80 percent. In general, adding one node to N moves N/(N+1) of all keys.
 
 For a cache, that is a miss storm that dumps reads onto the database. For a sharded database, it means copying most of the dataset to add capacity.
 
@@ -20,7 +20,7 @@ For a cache, that is a miss storm that dumps reads onto the database. For a shar
 
 ## What Is Consistent Hashing?
 
-**Consistent hashing** is a placement scheme where adding or removing one node relocates only the keys that node gains or loses, roughly 1/N of the total.
+**Consistent hashing** is a placement scheme where adding or removing one node relocates just the keys that node gains or loses, roughly 1/N of the total.
 
 ### The Ring
 
@@ -34,9 +34,9 @@ A key belongs to the first server clockwise from its position, so each server ow
 
 ### What Moves on a Join or Leave
 
-When server D joins between A and B, it takes only the keys on the arc from A to D, which used to belong to B. Every other arc keeps its owner. If D later fails, that arc falls back to B.
+When server D joins between A and B, it takes the keys on the arc from A to D, which used to belong to B. Every other arc keeps its owner. If D later fails, that arc falls back to B.
 
-With N evenly loaded nodes, a join moves about 1/(N+1) of the keys and a removal about 1/N. Going from 4 to 5 servers now moves roughly 20 percent instead of 80.
+With N evenly loaded nodes, a join moves about 1/(N+1) of the keys and a removal about 1/N. Going from 4 to 5 servers now moves roughly 20 percent, down from 80.
 
 <!-- DIAGRAM: ring before and after server D joins, highlighting the single arc that changes owner from B to D -->
 
@@ -52,11 +52,11 @@ Random positions split a circle unevenly. With N random points, the expected lar
 
 ### How Virtual Nodes Fix It
 
-A **virtual node** is one of many positions a physical server occupies on the ring. Instead of hashing "server-A" once, you hash "server-A#0" through "server-A#199". The physical server owns the sum of its small arcs.
+A **virtual node** is one of many positions a physical server occupies on the ring. In place of hashing "server-A" once, you hash "server-A#0" through "server-A#199". The physical server owns the sum of its small arcs.
 
 ### The Math to Quote
 
-With N servers and V virtual nodes each, the expected share per server is still 1/N; V changes only the spread, and the average stays put. A server's share is the sum of V small, roughly independent arcs, so its deviation from 1/N shrinks roughly as 1/sqrt(V). At V = 100 a typical server is within about 10 percent of average; at V = 1,000, about 3 percent.
+With N servers and V virtual nodes each, the expected share per server is still 1/N; V changes just the spread, and the average stays put. A server's share is the sum of V small, roughly independent arcs, so its deviation from 1/N shrinks roughly as 1/sqrt(V). At V = 100 a typical server is within about 10 percent of average; at V = 1,000, about 3 percent.
 
 Failures spread too. A dead server's virtual nodes are scattered, so its keys flow to many successors, and each of the N - 1 survivors grows from 1/N to about 1/(N-1) of the keys.
 
@@ -88,11 +88,11 @@ Every router must agree on membership, or two clients will send one key to diffe
 
 ### Moving the Data
 
-The ring says only who owns a key; getting the data there is a separate job. A cache can let moved keys miss and refill. A database must stream the arc to the new owner first, or read from the previous owner until the copy completes.
+The ring says who owns a key; getting the data there is a separate job. A cache can let moved keys miss and refill. A database must stream the arc to the new owner first, or read from the previous owner until the copy completes.
 
 ### Hot Keys Still Hurt
 
-Consistent hashing balances key counts only; request rates are a separate problem. One celebrity key still maps to one owner. Cache it in-process at the app tier, or split it into suffixed copies (key#1 to key#8) spread around the ring and read a random one.
+Consistent hashing balances key counts; request rates need a separate fix. One celebrity key still maps to one owner. Cache it in-process at the app tier, or split it into suffixed copies (key#1 to key#8) spread around the ring and read a random one.
 
 ---
 
@@ -100,7 +100,7 @@ Consistent hashing balances key counts only; request rates are a separate proble
 
 - **Fixed hash slots** - Hash keys into a fixed slot count, such as 16,384 in Redis Cluster, and assign slots to nodes. Pros: explicit, observable rebalancing. Cons: slot count caps how finely you can split.
 - **Rendezvous hashing** - Score every node with hash(key, node) and pick the highest. Pros: minimal movement, just a node list to maintain. Cons: O(N) work per lookup.
-- **Jump consistent hash** - Computes a bucket number purely from the key and the bucket count. Pros: even balance, zero memory. Cons: buckets are numbered, so you add or remove only at the end.
+- **Jump consistent hash** - Computes a bucket number purely from the key and the bucket count. Pros: even balance, zero memory. Cons: buckets are numbered, so you add or remove at the end.
 - **Bounded loads** - Cap each node at (1 + epsilon) times the average and push overflow clockwise. Pros: limits skew. Cons: extra bookkeeping.
 
 <!-- DIAGRAM: side-by-side of a ring with virtual nodes, a fixed slot table, and rendezvous scoring for one key -->
@@ -115,7 +115,7 @@ Reach for it in a distributed cache, a key-value store, sticky load balancing, o
 
 ## Summary
 
-- **Ring over modulo** - About 1/N of keys move per change instead of N/(N+1).
+- **Ring over modulo** - About 1/N of keys move per change, compared with N/(N+1).
 - **Virtual nodes** - Share stays 1/N, spread shrinks as 1/sqrt(V).
 - **Limits** - Hot keys need their own fix; membership must be agreed on.
 
@@ -126,7 +126,7 @@ Practice consistent hashing by designing a distributed cache or key-value store 
 - **Why the ring over hash mod N?** - Changing N remaps N/(N+1) of keys, emptying a cache or forcing a near-full reshuffle. The ring moves about 1/N.
 - **How many virtual nodes?** - A few hundred per server. Spread scales as 1/sqrt(V), so 100 to 200 gives roughly 7 to 10 percent deviation at trivial lookup cost.
 - **What happens when a node fails?** - Its arcs pass clockwise, spread across survivors by virtual nodes; replicas already hold the data.
-- **Does it solve hot keys?** - It balances keys only, so hot keys need their own fix: an in-process cache or split copies.
+- **Does it solve hot keys?** - It balances keys, so hot keys need their own fix: an in-process cache or split copies.
 - **How do clients learn about changes?** - From a coordination service, gossip, or a routing proxy. Version the ring so stale clients can detect it.
 - **Ring or fixed slots?** - Slots make rebalancing explicit; a ring with virtual nodes lets you skip choosing a slot count upfront. Either works if you state the trade-off.
 
