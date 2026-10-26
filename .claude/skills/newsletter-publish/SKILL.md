@@ -144,6 +144,15 @@ comics wait for the reset - edit the scheduled post before its send date.
   until they meet it; say so to the founder before scheduling.
 - Shell: `cd` into the scratchpad before writing relative paths; a stray relative write lands in ~/dev.
 
+- Substack editor + Claude-in-Chrome: once the editor doc changes, every tool call on that tab can fail with
+  "Cannot access a chrome-extension:// URL of different extension". Edit a scheduled post from a non-editor
+  page (e.g. /publish/posts/scheduled) with fetch instead: upload with `POST /api/v1/image {image: dataURL}`
+  (get the bytes in via a temporary file input + `upload_image`, crop with canvas), then GET
+  `/api/v1/drafts/<id>`, unshift a copy of an existing `captionedImage` node with the new src/size, PUT
+  `{draft_body}`. Schedule and audience stay as they were; re-read to confirm.
+- Brevo: editing a scheduled campaign needs Suspend -> Edit design -> Save & Quit -> Schedule. The Schedule
+  panel defaults to **Send now**; pick "Schedule for later", set date (DD/MM/YYYY), hour and minutes 00.
+
 ## 7. Close out
 
 - Update `Product1/docs/CHECKLIST.md` (Phase K) with post IDs, campaign numbers and send times.
