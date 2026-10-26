@@ -73,5 +73,7 @@ Or structured list with bold Q, brief A.
 - [ ] `{{PAYWALL}}` marker present after ~30% of content
 - [ ] No "- " prefix on sub-headlines
 - [ ] No leading blank lines at article start
+- [ ] Positive wording: no not/no/don't/never outside code (TALK_RULES "Positive wording")
+- [ ] Lead images: one dialogue comic at the top, one infographic before the main design section
 - [ ] Diagrams use normal sizing (not full-bleed)
 - [ ] 800-1500 words
