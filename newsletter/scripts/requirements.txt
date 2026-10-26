@@ -1,3 +1,4 @@
 python-substack>=0.1.18
 python-dotenv>=1.0.0
 tqdm>=4.64.0
+markdown>=3.5

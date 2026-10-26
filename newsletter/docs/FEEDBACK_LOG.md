@@ -240,6 +240,26 @@ every send to whenever a human happened to run the script.
 
 ---
 
+## 2026-10-26 - Positive wording, two lead-image formats, email renderer
+
+**Feedback:**
+- "use positive words over no, not, don't - universal positive words"
+- "use images like multiple people talking with dialogue and having interaction ... very involved"
+- "add at least 1 image like how alex does ... with different format" (system-design infographic style)
+
+**Changes:**
+- `newsletter/TALK_RULES.md`: new "Positive wording" and "Lead images" sections.
+- `newsletter/agents/writer.md`: verifier checklist gains both checks.
+- `newsletter/scripts/render_email.py` + `tests/test_render_email.py`: one draft renders to
+  ESP custom-HTML (comic under the title, infographic before a named H2, UTMs re-tagged
+  `utm_source=newsletter&utm_medium=email`, markers resolved, ASCII-only). Mutating the
+  infographic insert or the UTM re-tag turns 4 of 8 tests red.
+
+**Known gap:** issues sent this week carry 2 lead images each; the 20-25 Excalidraw diagram
+rule (`test_all_drafts_minimum_20_diagrams`) is still the bar for drafts committed here.
+
+---
+
 ## Template reference
 
 - **Article structure**: `newsletter/docs/ARTICLE_TEMPLATE.md`

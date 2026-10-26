@@ -54,6 +54,17 @@ Skim once. Act. Don't re-read.
 - **Smaller sizing** - Diagrams must match content column width (728px render width, ~960x480 source). Do not use full-bleed/oversized images. imageSize: "normal", resizeWidth: 728.
 - **Verify loading** - After publishing, verify diagrams actually load on the live website (newsletter.systemdesignlaws.xyz). Check every image URL resolves. Reject if any diagram is broken.
 
+## Positive wording
+
+- **Say what to do, not what to avoid.** Headlines, sub-headlines, image text, Q&A lines and social copy use positive phrasing: "Log metadata only", not "Log metadata, not bodies"; "Keep secrets on the laptop", not "Don't send secrets".
+- Check before submit: `grep -noiE "\b(not|no|don't|never|cannot|can't|won't|doesn't|isn't)\b" DRAFT.md` returns nothing outside code. If a negation is load-bearing for accuracy, keep accuracy and note it for the editor.
+
+## Lead images (in addition to the diagrams)
+
+- Every issue opens with a **dialogue comic**: several engineers around a table, speech bubbles carrying the issue's key lines, a headline banner and a name plate.
+- Every issue carries one **infographic** in the clean system-design style: white background, title with a green accent bar, "SystemDesignLaws" top right, a central node, labelled pastel boxes, dashed connectors. Place it before the main design section.
+- Bubble and box text comes from the article, spelled exactly; read every word in the final image before use. No third-party logos.
+
 ## Formatting
 
 - **No "- " prefix on sub-headlines** - Sub-headlines must not start with "- ". Write complete sub-headlines. No truncation - if text is long, use "..." at the end, never cut mid-word.
