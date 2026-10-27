@@ -12,7 +12,7 @@ Issues scheduled straight from the Substack and Brevo editors with two lead imag
 | consistent-hashing-for-system-design-interviews.md | Tue Nov 3, 2026 |
 | rate-limiter-system-design.md | Fri Nov 6, 2026 |
 | api-gateway-for-system-design-interviews.md | Tue Nov 10, 2026 |
-| camoleak-copilot-chat-image-exfiltration.md | Fri Nov 13, 2026 (draft, awaiting founder go) |
-| claude-code-repo-config-api-key-exfiltration.md | Tue Nov 17, 2026 (draft, awaiting founder go) |
-| microsoft-38tb-sas-token-exposure.md | Fri Nov 20, 2026 (draft, awaiting founder go) |
-| samsung-chatgpt-source-code-leak.md | Tue Nov 24, 2026 (draft, awaiting founder go) |
+| camoleak-copilot-chat-image-exfiltration.md | Fri Nov 13, 2026 |
+| claude-code-repo-config-api-key-exfiltration.md | Tue Nov 17, 2026 |
+| microsoft-38tb-sas-token-exposure.md | Fri Nov 20, 2026 |
+| samsung-chatgpt-source-code-leak.md | Tue Nov 24, 2026 |
