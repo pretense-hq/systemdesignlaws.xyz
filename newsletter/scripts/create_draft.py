@@ -316,18 +316,23 @@ def prepare_body_markdown(content: str, title: str) -> str:
     return "\n".join(out).strip()
 
 
+def _parse_env_file(text: str) -> dict:
+    """Parse .env text into a dict: KEY=value lines, # comments skipped, quotes stripped."""
+    env = {}
+    for line in text.splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        k, v = line.split("=", 1)
+        env[k.strip()] = v.strip().strip('"').strip("'")
+    return env
+
+
 def get_publication_from_env(env_path: Path):
     """Read SUBSTACK_PUBLICATION from .env. Returns None if unset."""
     if not env_path.exists():
         return None
-    with open(env_path) as f:
-        for line in f:
-            line = line.strip()
-            if "SUBSTACK_PUBLICATION" in line and "=" in line and not line.startswith("#"):
-                k, v = line.split("=", 1)
-                if k.strip() == "SUBSTACK_PUBLICATION" and v.strip():
-                    return v.strip().strip('"').strip("'")
-    return None
+    return _parse_env_file(env_path.read_text()).get("SUBSTACK_PUBLICATION") or None
 
 
 def load_session():
@@ -349,15 +354,7 @@ def load_session():
         sys.exit(1)
     
     # Load .env manually (no external dep)
-    env = {}
-    with open(env_path) as f:
-        for line in f:
-            line = line.strip()
-            if not line or line.startswith("#"):
-                continue
-            if "=" in line:
-                k, v = line.split("=", 1)
-                env[k.strip()] = v.strip().strip('"').strip("'")
+    env = _parse_env_file(env_path.read_text())
     
     cookies_str = env.get("SUBSTACK_COOKIES")
     if not cookies_str and env.get("SUBSTACK_SID") and env.get("CONNECT_SID"):
