@@ -18,9 +18,11 @@ if HAS_CREATE_DRAFT:
     spec.loader.exec_module(create_draft)
     parse_draft_content = create_draft.parse_draft_content
     get_publication_from_env = create_draft.get_publication_from_env
+    _parse_env_file = create_draft._parse_env_file
 else:
     parse_draft_content = None
     get_publication_from_env = None
+    _parse_env_file = None
 
 
 @unittest.skipUnless(HAS_CREATE_DRAFT, "create_draft.py not in repo")
@@ -73,6 +75,37 @@ class TestGetPublicationFromEnv(unittest.TestCase):
             f.flush()
             p = get_publication_from_env(Path(f.name))
         self.assertEqual(p, "https://jimmymalhan.substack.com")
+
+
+@unittest.skipUnless(HAS_CREATE_DRAFT, "create_draft.py not in repo")
+class TestParseEnvFile(unittest.TestCase):
+    """Test .env parsing shared by load_session and get_publication_from_env."""
+
+    def test_keeps_equals_signs_in_value(self):
+        env = _parse_env_file("SUBSTACK_COOKIES=abc=123; x=y\n")
+        self.assertEqual(env.get("SUBSTACK_COOKIES"), "abc=123; x=y")
+
+    def test_skips_comments_and_blank_lines(self):
+        env = _parse_env_file("# comment\n\nKEY=val\n")
+        self.assertEqual(env, {"KEY": "val"})
+
+    def test_strips_quotes(self):
+        env = _parse_env_file('PUB="https://x.substack.com"\nOTHER=\'y\'\n')
+        self.assertEqual(env, {"PUB": "https://x.substack.com", "OTHER": "y"})
+
+    def test_drops_export_prefix(self):
+        env = _parse_env_file("export SUBSTACK_PUBLICATION=https://x.substack.com\n")
+        self.assertEqual(env, {"SUBSTACK_PUBLICATION": "https://x.substack.com"})
+
+    def test_main_reads_publication_through_the_shared_parser(self):
+        src = _create_draft_path.read_text()
+        self.assertEqual(src.count("line.split(\"=\", 1)"), 1)
+        self.assertIn("publication = get_publication_from_env(", src)
+
+    def test_publication_value_is_quote_stripped(self):
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".env", delete=False) as f:
+            f.write('SUBSTACK_PUBLICATION="https://jimmymalhan.substack.com"\n')
+        self.assertEqual(get_publication_from_env(Path(f.name)), "https://jimmymalhan.substack.com")
 
 
 class TestDraftFileExists(unittest.TestCase):
