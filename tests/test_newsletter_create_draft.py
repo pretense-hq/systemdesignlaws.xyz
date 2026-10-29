@@ -93,6 +93,15 @@ class TestParseEnvFile(unittest.TestCase):
         env = _parse_env_file('PUB="https://x.substack.com"\nOTHER=\'y\'\n')
         self.assertEqual(env, {"PUB": "https://x.substack.com", "OTHER": "y"})
 
+    def test_drops_export_prefix(self):
+        env = _parse_env_file("export SUBSTACK_PUBLICATION=https://x.substack.com\n")
+        self.assertEqual(env, {"SUBSTACK_PUBLICATION": "https://x.substack.com"})
+
+    def test_main_reads_publication_through_the_shared_parser(self):
+        src = _create_draft_path.read_text()
+        self.assertEqual(src.count("line.split(\"=\", 1)"), 1)
+        self.assertIn("publication = get_publication_from_env(", src)
+
     def test_publication_value_is_quote_stripped(self):
         with tempfile.NamedTemporaryFile(mode="w", suffix=".env", delete=False) as f:
             f.write('SUBSTACK_PUBLICATION="https://jimmymalhan.substack.com"\n')

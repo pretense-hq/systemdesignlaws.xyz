@@ -317,14 +317,17 @@ def prepare_body_markdown(content: str, title: str) -> str:
 
 
 def _parse_env_file(text: str) -> dict:
-    """Parse .env text into a dict: KEY=value lines, # comments skipped, quotes stripped."""
+    """Parse .env text into a dict: KEY=value lines, # comments skipped, `export ` prefix dropped, quotes stripped."""
     env = {}
     for line in text.splitlines():
         line = line.strip()
         if not line or line.startswith("#") or "=" not in line:
             continue
         k, v = line.split("=", 1)
-        env[k.strip()] = v.strip().strip('"').strip("'")
+        k = k.strip()
+        if k.startswith("export "):
+            k = k[len("export "):].strip()
+        env[k] = v.strip().strip('"').strip("'")
     return env
 
 
@@ -404,16 +407,7 @@ def main():
     progress_bar(1, 3, prefix="Session")
 
     # Use primary publication (avoids subdomain mismatch); override via SUBSTACK_PUBLICATION in .env
-    publication = None
-    env_path = Path(__file__).parent / ".env"
-    if env_path.exists():
-        with open(env_path) as f:
-            for line in f:
-                if "SUBSTACK_PUBLICATION" in line and "=" in line and not line.strip().startswith("#"):
-                    k, v = line.split("=", 1)
-                    if k.strip() == "SUBSTACK_PUBLICATION" and v.strip():
-                        publication = v.strip().strip('"').strip("'")
-                        break
+    publication = get_publication_from_env(Path(__file__).parent / ".env")
     progress_bar(2, 3, prefix="Session")
 
     api = Api(**session) if publication is None else Api(publication_url=publication, **session)
