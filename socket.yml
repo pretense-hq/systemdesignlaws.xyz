@@ -1,0 +1,22 @@
+# Socket.dev supply-chain gating (TASK-497; same policy as pretense, pretense-backend,
+# pretense-dashboard, pretense-strapi, pretense-admin). Schema v2: issueRules are alert
+# ACTIONS (error = block the PR check). PR checks are diff-scoped: they block NEW
+# findings in packages a PR adds or changes, not pre-existing tree debt.
+# Inert until the Socket GitHub App check is required on this repo
+# (pretense-compliance-standards/audit-evidence-20260806/socket-gating-runbook.md).
+version: 2
+
+triggerPaths:
+  - "newsletter/scripts/package.json"
+  - "newsletter/scripts/package-lock.json"
+  - "newsletter/scripts/requirements.txt"
+
+issueRules:
+  criticalCVE: error      # Critical CVE -> block
+  cve: error              # High CVE -> block (canonical slug "cve")
+  malware: error          # Known / suspected malware
+  installScripts: error   # pre/postinstall scripts
+  telemetry: error        # phone-home / telemetry
+  obfuscatedFile: error   # Obfuscated code
+  didYouMean: error       # Typosquat / name confusion
+  deprecated: error       # Deprecated package
